@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/insert"
+        android:title="插入一条数据"
+        app:showAsAction="collapseActionView" />
+    <item
+        android:id="@+id/delete"
+        android:title="删除一条数据"
+        app:showAsAction="collapseActionView" />
+    <item
+        android:id="@+id/insert_random"
+        android:title="随机插入一条数据"
+        app:showAsAction="collapseActionView" />
+    <item
+        android:id="@+id/delete_random"
+        android:title="随机删除一条数据"
+        app:showAsAction="collapseActionView" />
+    <item
+        android:id="@+id/add_header"
+        android:title="添加一个头视图"
+        app:showAsAction="collapseActionView" />
+    <item
+        android:id="@+id/remove_header"
+        android:title="删除一个头视图"
+        app:showAsAction="collapseActionView" />
+    <item
+        android:id="@+id/add_footer"
+        android:title="添加一个足视图"
+        app:showAsAction="collapseActionView" />
+    <item
+        android:id="@+id/remove_footer"
+        android:title="删除一个足视图"
+        app:showAsAction="collapseActionView" />
+    <item
+        android:id="@+id/clear"
+        android:title="清空数据"
+        app:showAsAction="collapseActionView" />
+</menu>

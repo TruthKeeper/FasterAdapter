@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/white"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_init"
+            style="@style/CommonBtn"
+            android:text="初始化数据" />
+
+        <Button
+            android:id="@+id/btn_clear"
+            style="@style/CommonBtn"
+            android:text="清空数据" />
+
+        <Button
+            android:id="@+id/btn_init_random"
+            style="@style/CommonBtn"
+            android:text="随机数据" />
+
+        <Button
+            android:id="@+id/btn_swap_random"
+            style="@style/CommonBtn"
+            android:text="随机移动" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_add"
+            style="@style/CommonBtn"
+            android:text="添加数据" />
+
+        <Button
+            android:id="@+id/btn_remove"
+            style="@style/CommonBtn"
+            android:text="删除数据" />
+
+        <Button
+            android:id="@+id/btn_add_random"
+            style="@style/CommonBtn"
+            android:text="随机添加" />
+
+        <Button
+            android:id="@+id/btn_remove_random"
+            style="@style/CommonBtn"
+            android:text="随机删除" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_add_header"
+            style="@style/CommonBtn"
+            android:text="添加头视图" />
+
+        <Button
+            android:id="@+id/btn_remove_header"
+            style="@style/CommonBtn"
+            android:text="删除头视图" />
+
+        <Button
+            android:id="@+id/btn_add_footer"
+            style="@style/CommonBtn"
+            android:text="添加足视图" />
+
+        <Button
+            android:id="@+id/btn_remove_footer"
+            style="@style/CommonBtn"
+            android:text="删除足视图" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_switch"
+            style="@style/CommonBtn"
+            android:text="切换视图优先级" />
+
+        <Button
+            android:id="@+id/btn_empty_switch"
+            style="@style/CommonBtn"
+            android:text="显示/禁用空视图" />
+
+        <Button
+            android:id="@+id/btn_error_switch"
+            style="@style/CommonBtn"
+            android:text="显示/禁用错误视图" />
+
+    </LinearLayout>
+</LinearLayout>
+
