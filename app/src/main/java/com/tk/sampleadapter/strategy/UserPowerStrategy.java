@@ -1,4 +1,4 @@
-package com.tk.sampleadapter;
+package com.tk.sampleadapter.strategy;
 
 
 import android.view.LayoutInflater;
@@ -8,6 +8,8 @@ import android.widget.CompoundButton;
 
 import com.tk.fasteradapter.FasterHolder;
 import com.tk.fasteradapter.Strategy;
+import com.tk.sampleadapter.R;
+import com.tk.sampleadapter.User;
 
 /**
  * <pre>
@@ -33,6 +35,7 @@ public class UserPowerStrategy extends Strategy<User> {
         return new FasterHolder(LayoutInflater.from(parent.getContext()).inflate(layoutId(), parent, false)) {
             @Override
             protected void onCreate(View itemView) {
+                //不在onBindViewHolder里面是因为在创建时定义相对节省性能
                 this.<CompoundButton>findViewById(R.id.cbx_heart).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                     @Override
                     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {

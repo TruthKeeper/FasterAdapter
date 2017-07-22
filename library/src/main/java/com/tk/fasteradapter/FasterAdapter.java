@@ -1,5 +1,6 @@
 package com.tk.fasteradapter;
 
+import android.content.res.Resources;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -20,8 +21,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 
 import static android.support.v7.widget.RecyclerView.SCROLL_STATE_IDLE;
 import static android.view.View.VISIBLE;
@@ -44,6 +47,7 @@ import static com.tk.fasteradapter.FasterAdapter.Status.LOAD_STANDBY;
  *              支持头部View配置；
  *              支持足部View配置；
  *              支持上拉加载以及监听、NestedScroll场景下的配置；
+ *              上拉加载内置异常处理：点击LoadMoreView重试，回调onLoad方法；
  *              支持
  *              支持常见数据集合增、删、以及Diff操作；
  *              支持对数据集合的FasterHolder的单击事件监听；
@@ -59,7 +63,6 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     public static final int TYPE_HEADER = -30000;
     public static final int TYPE_FOOTER = -40000;
     public static final int TYPE_LOAD = -50000;
-    ;
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({LOAD_STANDBY, LOAD_ERROR, LOAD_END, LOAD_ING})
@@ -81,7 +84,6 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
          */
         int LOAD_ING = 0x03;
     }
-
 
     /**
      * 上拉加载的状态
@@ -124,6 +126,10 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      */
     private List<Entry<T>> mList = null;
     /**
+     * 数据类型 - 视图策略的绑定关系
+     */
+    private Map<Class<?>, Strategy<?>> mBindMap;
+    /**
      * 是否显示错误，true时优先级大于空视图的优先级，未设置errorView时无效
      */
     private boolean isDisplayError = false;
@@ -137,7 +143,43 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     private RecyclerView.OnScrollListener onScrollListener = new RecyclerView.OnScrollListener() {
         @Override
         public void onScrollStateChanged(final RecyclerView recyclerView, final int newState) {
-            applyIByScrollState(newState);
+            if (null == mLayoutManager) {
+                return;
+            }
+            int lastVisibleItemPosition = 0;
+            int firstCompletelyVisibleItemPosition = 0;
+            if (mLayoutManager instanceof LinearLayoutManager) {
+                LinearLayoutManager manager = (LinearLayoutManager) mLayoutManager;
+                lastVisibleItemPosition = manager.findLastVisibleItemPosition();
+                firstCompletelyVisibleItemPosition = manager.findFirstCompletelyVisibleItemPosition();
+
+            } else if (mLayoutManager instanceof StaggeredGridLayoutManager) {
+                StaggeredGridLayoutManager manager = (StaggeredGridLayoutManager) mLayoutManager;
+                int[] pos = new int[manager.getSpanCount()];
+                manager.findLastVisibleItemPositions(pos);
+                Arrays.sort(pos);
+                lastVisibleItemPosition = pos[manager.getSpanCount() - 1];
+                manager.findFirstCompletelyVisibleItemPositions(pos);
+                Arrays.sort(pos);
+                firstCompletelyVisibleItemPosition = pos[0];
+            }
+            /*
+             * 满足条件
+             */
+            if (SCROLL_STATE_IDLE == newState
+                    && 1 == getLoadMoreViewSpace()
+                    && 0 == Math.max(getEmptyViewSpace(), getErrorViewSpace())
+                    && (mLoadStatus == LOAD_STANDBY)
+                    && (lastVisibleItemPosition == getItemCount() - 1
+                    && 0 != firstCompletelyVisibleItemPosition)) {
+                //开始加载
+                mLoadStatus = LOAD_ING;
+                mLoadMoreContainer.setVisibility(VISIBLE);
+                mILoadMore.onShow();
+                if (null != mOnLoadListener) {
+                    mOnLoadListener.onLoad();
+                }
+            }
         }
 
         @Override
@@ -153,6 +195,8 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     private FasterAdapter(Builder<T> builder) {
         mOnItemClickListener = builder.itemListener;
         mOnLoadListener = builder.loadListener;
+        isEmptyMatchParent = builder.isEmptyMatchParent;
+        isErrorMatchParent = builder.isErrorMatchParent;
         if (null != builder.emptyView) {
             mEmptyContainer = new FrameLayout(builder.emptyView.getContext());
             mEmptyContainer.setLayoutParams(new LayoutParams(MATCH_PARENT, isEmptyMatchParent ? MATCH_PARENT : WRAP_CONTENT));
@@ -187,16 +231,12 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
             builder.loadMoreView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (LOAD_ERROR == mLoadStatus && (null != mOnLoadListener)) {
-                        mOnLoadListener.onReLoad();
-                    }
+                    loadMoreWhileFailure();
                 }
             });
             mILoadMore = (ILoadMore) builder.loadMoreView;
         }
 
-        isEmptyMatchParent = builder.isEmptyMatchParent;
-        isErrorMatchParent = builder.isErrorMatchParent;
         isEmptyEnabled = builder.isEmptyEnabled;
         headerFooterFront = builder.headerFooterFront;
         isLoadMoreEnabled = builder.isLoadMoreEnabled;
@@ -205,6 +245,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         } else {
             mList = builder.list;
         }
+        mBindMap = builder.bindMap;
         array = new SparseArray<>(2);
     }
 
@@ -362,7 +403,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         if (null == mHeaderContainer) {
             mHeaderContainer = new LinearLayout(headerView.getContext());
             mHeaderContainer.setOrientation(LinearLayout.VERTICAL);
-            mHeaderContainer.setLayoutParams(new LayoutParams(MATCH_PARENT, MATCH_PARENT));
+            mHeaderContainer.setLayoutParams(new LayoutParams(MATCH_PARENT, WRAP_CONTENT));
         }
         mHeaderContainer.addView(headerView, index);
         if (init) {
@@ -554,7 +595,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         if (1 == getLoadMoreViewSpace()) {
             mILoadMore.onDismiss();
             mLoadMoreContainer.setVisibility(View.GONE);
-            this.mLoadStatus = LOAD_STANDBY;
+            mLoadStatus = LOAD_STANDBY;
         }
     }
 
@@ -564,7 +605,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     public void loadMoreFailure() {
         if (1 == getLoadMoreViewSpace()) {
             mILoadMore.onFailure();
-            this.mLoadStatus = LOAD_ERROR;
+            mLoadStatus = LOAD_ERROR;
         }
     }
 
@@ -574,52 +615,51 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     public void loadMoreEnd() {
         if (1 == getLoadMoreViewSpace()) {
             mILoadMore.onLoadEnd();
-            this.mLoadStatus = LOAD_END;
+            mLoadStatus = LOAD_END;
         }
     }
 
     /**
-     * 根据滚动状态来判断视图是否可见，也可用于嵌套Nested场景
-     *
-     * @param scrollState RecyclerView，NestedScrollView，ScrollView的滚动状态
+     * 重新加载
      */
-    public void applyIByScrollState(int scrollState) {
+    public void loadMoreWhileFailure() {
+        if (1 == getLoadMoreViewSpace() && LOAD_ERROR == mLoadStatus) {
+            mLoadStatus = LOAD_ING;
+            mILoadMore.onShow();
+            if (null != mOnLoadListener) {
+                mOnLoadListener.onLoad();
+            }
+        }
+    }
+
+    /**
+     * 用于嵌套Nested场景
+     *
+     * @param scrollState NestedScrollView的滚动状态
+     */
+    public void applyInNestedScroll(int scrollState) {
         if (null == mLayoutManager) {
             return;
         }
-        int lastVisibleItemPosition = 0;
-        int firstCompletelyVisibleItemPosition = 0;
-        if (mLayoutManager instanceof LinearLayoutManager) {
-            LinearLayoutManager manager = (LinearLayoutManager) mLayoutManager;
-            lastVisibleItemPosition = manager.findLastVisibleItemPosition();
-            firstCompletelyVisibleItemPosition = manager.findFirstCompletelyVisibleItemPosition();
 
-        } else if (mLayoutManager instanceof StaggeredGridLayoutManager) {
-            StaggeredGridLayoutManager manager = (StaggeredGridLayoutManager) mLayoutManager;
-            int[] pos = new int[manager.getSpanCount()];
-            manager.findLastVisibleItemPositions(pos);
-            Arrays.sort(pos);
-            lastVisibleItemPosition = pos[manager.getSpanCount() - 1];
-            manager.findFirstCompletelyVisibleItemPositions(pos);
-            Arrays.sort(pos);
-            firstCompletelyVisibleItemPosition = pos[0];
-        }
         /*
          * 满足条件
          */
         if (SCROLL_STATE_IDLE == scrollState
                 && 1 == getLoadMoreViewSpace()
-                && getEmptyViewSpace() == 0
-                && getErrorViewSpace() == 0
-                && (mLoadStatus == LOAD_STANDBY)
-                && (lastVisibleItemPosition == getItemCount() - 1
-                && 0 != firstCompletelyVisibleItemPosition)) {
-            //开始加载
-            mLoadStatus = LOAD_ING;
-            mLoadMoreContainer.setVisibility(VISIBLE);
-            mILoadMore.onShow();
-            if (null != mOnLoadListener) {
-                mOnLoadListener.onLoad();
+                && 0 == Math.max(getEmptyViewSpace(), getErrorViewSpace())
+                && (mLoadStatus == LOAD_STANDBY)) {
+            //上拉加载条目在屏幕上可见
+            int[] location = new int[2];
+            mLoadMoreContainer.getLocationInWindow(location);
+            if (location[1] <= Resources.getSystem().getDisplayMetrics().heightPixels) {
+                //开始加载
+                mLoadStatus = LOAD_ING;
+                mLoadMoreContainer.setVisibility(VISIBLE);
+                mILoadMore.onShow();
+                if (null != mOnLoadListener) {
+                    mOnLoadListener.onLoad();
+                }
             }
         }
     }
@@ -640,10 +680,20 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
                 }
             }
         } else {
+            if (!(loadMoreView instanceof ILoadMore)) {
+                throw new IllegalStateException("loadMoreView must implements ILoadMore !");
+            }
+            mILoadMore = (ILoadMore) loadMoreView;
             if (null == mLoadMoreContainer) {
                 mLoadMoreContainer = new FrameLayout(loadMoreView.getContext());
                 mLoadMoreContainer.setLayoutParams(new LayoutParams(MATCH_PARENT, WRAP_CONTENT));
                 mLoadMoreContainer.addView(loadMoreView);
+                loadMoreView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        loadMoreWhileFailure();
+                    }
+                });
                 if (0 == Math.max(getEmptyViewSpace(), getErrorViewSpace())) {
                     notifyItemInserted(getItemCount() - 1);
                 }
@@ -896,18 +946,16 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
 
     @Override
     public int getItemCount() {
-        boolean showEmpty = 1 == getErrorViewSpace();
-        boolean showError = 1 == getEmptyViewSpace();
         if (headerFooterFront) {
             //头、足、占位视图可以同时显示
-            if (showEmpty || showError) {
+            if (1 == Math.max(getErrorViewSpace(), getEmptyViewSpace())) {
                 //占位视图(最多显示一个)+头+足
                 return getHeaderViewSpace() + 1 + getFooterViewSpace();
             }
             //头+体+足+加载视图
             return getHeaderViewSpace() + mList.size() + getFooterViewSpace() + getLoadMoreViewSpace();
         } else {
-            if (showEmpty || showError) {
+            if (1 == Math.max(getErrorViewSpace(), getEmptyViewSpace())) {
                 //占位视图
                 return 1;
             }
@@ -1317,6 +1365,50 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     }
 
     /**
+     * 根据绑定关系来填充数据集合
+     *
+     * @param list
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public List<Entry<T>> fillByBindStrategy(@Nullable List<T> list) {
+        if (null == mBindMap || mBindMap.isEmpty()) {
+            throw new IllegalStateException("FasterAdapter Builder no bind Class of Strategy !");
+        }
+        List<Entry<T>> result = new ArrayList<>();
+        if (null != list) {
+            Entry<T> entry;
+            for (T t : list) {
+                Strategy<T> strategy = (Strategy<T>) mBindMap.get(t.getClass());
+                if (null == strategy) {
+                    throw new IllegalStateException("no Class of Strategy bind found!");
+                }
+                entry = new Entry<>(t, strategy);
+                result.add(entry);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 根据绑定关系来填充数据实体
+     *
+     * @param t
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public Entry<T> fillByBindStrategy(@NonNull T t) {
+        if (null == mBindMap || mBindMap.isEmpty()) {
+            throw new IllegalStateException("FasterAdapter Builder no bind Class of Strategy !");
+        }
+        Strategy<T> strategy = (Strategy<T>) mBindMap.get(t.getClass());
+        if (null == strategy) {
+            throw new IllegalStateException("no Class of Strategy bind found!");
+        }
+        return new Entry<>(t, strategy);
+    }
+
+    /**
      * 单类型策略的集合的方式填充
      *
      * @param list
@@ -1352,52 +1444,38 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         return result;
     }
 
+    public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
+        this.mOnItemClickListener = onItemClickListener;
+    }
+
+    public void setOnLoadListener(OnLoadListener onLoadListener) {
+        this.mOnLoadListener = onLoadListener;
+    }
+
     /**
-     * 多类型策略的集合的方式填充
+     * 移除器，兼容实现
      *
-     * @param list
-     * @param condiction
-     * @param strategy
      * @param <D>
-     * @return
      */
-    public static <D> List<Entry<D>> fillByMultiStrategy(List<D> list, Condition<D> condiction, Strategy<D> strategy) {
-        List<Entry<D>> result = new ArrayList<>();
-        Entry<D> entry;
-        for (int i = 0; i < list.size(); i++) {
-            entry = new Entry<>(list.get(i), condiction.strategy(list.get(i), i));
-            result.add(entry);
-        }
-        return result;
-    }
-
-
-    public void setOnItemClickListener(OnItemClickListener mOnItemClickListener) {
-        this.mOnItemClickListener = mOnItemClickListener;
-    }
-
     public interface Predicate<D> {
         boolean removeConfirm(D data);
     }
 
-    public interface Condition<D> {
-        Strategy<D> strategy(D data, int position);
-    }
-
+    /**
+     * 条目点击监听器
+     */
     public interface OnItemClickListener {
         void onClick(FasterAdapter adapter, View view, int listPosition);
     }
 
+    /**
+     * 上拉加载监听器
+     */
     public interface OnLoadListener {
         /**
          * 触发上拉加载
          */
         void onLoad();
-
-        /**
-         * 上拉加载内置异常处理：点击LoadMoreView重试
-         */
-        void onReLoad();
     }
 
     public static final class Builder<D> {
@@ -1414,6 +1492,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         private boolean headerFooterFront = false;
         private boolean isLoadMoreEnabled = true;
         private List<Entry<D>> list = new ArrayList<>();
+        private Map<Class<?>, Strategy<?>> bindMap = null;
 
         public Builder() {
         }
@@ -1602,6 +1681,22 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
          */
         public Builder<D> fillBySingleStrategy(@NonNull D[] ds, @NonNull Strategy<D> strategy) {
             this.list = FasterAdapter.fillBySingleStrategy(ds, strategy);
+            return this;
+        }
+
+        /**
+         * 通过数据类型 - 视图策略 来绑定
+         *
+         * @param cls
+         * @param strategy
+         * @param <T>
+         * @return
+         */
+        public <T> Builder<D> bind(@NonNull Class<T> cls, @NonNull Strategy<T> strategy) {
+            if (null == bindMap) {
+                bindMap = new HashMap<>();
+            }
+            bindMap.put(cls, strategy);
             return this;
         }
 

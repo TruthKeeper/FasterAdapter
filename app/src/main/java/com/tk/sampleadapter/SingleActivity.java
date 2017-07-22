@@ -4,8 +4,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
@@ -13,6 +15,12 @@ import android.widget.Toast;
 
 import com.tk.fasteradapter.Entry;
 import com.tk.fasteradapter.FasterAdapter;
+import com.tk.sampleadapter.layout.EmptyLayout;
+import com.tk.sampleadapter.layout.ErrorLayout;
+import com.tk.sampleadapter.layout.FooterLayout;
+import com.tk.sampleadapter.layout.HeaderLayout;
+import com.tk.sampleadapter.layout.LoadMoreLayout;
+import com.tk.sampleadapter.strategy.UserNormalStrategy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -163,23 +171,29 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
             public void run() {
                 if (adapter.getListSnapSize() >= 22) {
                     adapter.loadMoreEnd();
-                } else {
+                } else if (new Random().nextInt(6) > 1) {
                     adapter.loadMoreDismiss();
                     adapter.add(new Entry<User>(new User("新增的菜鸡", 1, 0), strategy));
+                } else {
+                    adapter.loadMoreFailure();
                 }
             }
         }, 1000);
     }
 
     @Override
-    public void onReLoad() {
-
-    }
-
-    @Override
     public boolean onMenuItemClick(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.btn_switch:
+                if (recyclerview.getLayoutManager() instanceof GridLayoutManager) {
+                    recyclerview.setLayoutManager(new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL));
+                } else if (recyclerview.getLayoutManager() instanceof StaggeredGridLayoutManager) {
+                    recyclerview.setLayoutManager(new LinearLayoutManager(this));
+                } else {
+                    recyclerview.setLayoutManager(new GridLayoutManager(this, 2));
+                }
+                //LayoutManager发生变化，手动调用
+                adapter.onAttachedToRecyclerView(recyclerview);
                 break;
             case R.id.btn_function:
                 dialog.show();

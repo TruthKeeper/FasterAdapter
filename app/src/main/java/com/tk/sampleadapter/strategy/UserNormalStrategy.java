@@ -1,10 +1,12 @@
-package com.tk.sampleadapter;
+package com.tk.sampleadapter.strategy;
 
 
 import android.view.View;
 
 import com.tk.fasteradapter.FasterHolder;
 import com.tk.fasteradapter.Strategy;
+import com.tk.sampleadapter.R;
+import com.tk.sampleadapter.User;
 
 /**
  * <pre>

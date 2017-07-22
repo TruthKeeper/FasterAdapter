@@ -1,4 +1,4 @@
-package com.tk.sampleadapter;
+package com.tk.sampleadapter.layout;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
@@ -10,6 +10,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.tk.fasteradapter.ILoadMore;
+import com.tk.sampleadapter.R;
 
 /**
  * <pre>

@@ -1,4 +1,4 @@
-package com.tk.sampleadapter;
+package com.tk.sampleadapter.layout;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
@@ -7,26 +7,28 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.widget.LinearLayout;
 
+import com.tk.sampleadapter.R;
+
 /**
  * <pre>
  *     author : TK
  *     time   : 2017/07/15
- *     desc   : 空视图
+ *     desc   : 错误视图
  * </pre>
  */
-public class EmptyLayout extends LinearLayout {
-    public EmptyLayout(Context context) {
+public class ErrorLayout extends LinearLayout {
+    public ErrorLayout(Context context) {
         this(context, null);
     }
 
-    public EmptyLayout(Context context, @Nullable AttributeSet attrs) {
+    public ErrorLayout(Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public EmptyLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public ErrorLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         setGravity(Gravity.CENTER_HORIZONTAL);
         setOrientation(VERTICAL);
-        LayoutInflater.from(context).inflate(R.layout.empty_layout, this);
+        LayoutInflater.from(context).inflate(R.layout.error_layout, this);
     }
 }

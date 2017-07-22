@@ -64,14 +64,34 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center_vertical"
-            android:text="List&lt;Object&gt;集合中是多种类型的数据，通过注册的方式绑定数据类型-视图策略" />
+            android:text="List&lt;Object&gt;集合中是多种类型的数据，通过自定义的方式绑定 数据类型 - 视图策略 " />
 
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="multi_register"
+            android:onClick="multi_bind"
             android:text="立即前往" />
     </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp">
 
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:text="NestedScrollView场景下兼容上拉加载" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="nested"
+            android:text="立即前往" />
+    </LinearLayout>
 </LinearLayout>
 

@@ -21,7 +21,10 @@ public class MainActivity extends AppCompatActivity {
         startActivity(new Intent(this, MultiActivity.class));
     }
 
-    public void multi_register(View v) {
-        startActivity(new Intent(this, MultiActivity.class));
+    public void multi_bind(View v) {
+        startActivity(new Intent(this, MultiBindActivity.class));
+    }
+    public void nested(View v) {
+        startActivity(new Intent(this, NestedActivity.class));
     }
 }

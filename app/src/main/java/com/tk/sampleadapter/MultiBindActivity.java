@@ -4,22 +4,21 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.tk.fasteradapter.Entry;
 import com.tk.fasteradapter.FasterAdapter;
 import com.tk.sampleadapter.layout.EmptyLayout;
 import com.tk.sampleadapter.layout.ErrorLayout;
 import com.tk.sampleadapter.layout.FooterLayout;
 import com.tk.sampleadapter.layout.HeaderLayout;
 import com.tk.sampleadapter.layout.LoadMoreLayout;
+import com.tk.sampleadapter.strategy.FunPeopleStrategy;
+import com.tk.sampleadapter.strategy.MeiziStrategy;
 import com.tk.sampleadapter.strategy.UserNormalStrategy;
 import com.tk.sampleadapter.strategy.UserPowerStrategy;
 
@@ -30,18 +29,18 @@ import java.util.Random;
 /**
  * <pre>
  *      author : TK
- *      time : 2017/7/15
+ *      time : 2017/7/22
  *      desc :
  * </pre>
  */
-public class MultiActivity extends AppCompatActivity implements FasterAdapter.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener, FasterAdapter.OnLoadListener, Toolbar.OnMenuItemClickListener {
+public class MultiBindActivity extends AppCompatActivity implements FasterAdapter.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener, FasterAdapter.OnLoadListener, Toolbar.OnMenuItemClickListener {
     private Toolbar toolbar;
     private SwipeRefreshLayout swipeLayout;
     private RecyclerView recyclerview;
 
     private Handler handler = new Handler();
     private FunctionDialog dialog;
-    private FasterAdapter<User> adapter;
+    private FasterAdapter<Object> adapter;
 
     private UserNormalStrategy normalStrategy = new UserNormalStrategy();
     private UserPowerStrategy powerStrategy = new UserPowerStrategy();
@@ -49,7 +48,7 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_multi);
+        setContentView(R.layout.activity_multi_bind);
         dialog = new FunctionDialog(this);
         dialog.setOnClickListener(this);
 
@@ -63,7 +62,10 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
         recyclerview.setLayoutManager(new LinearLayoutManager(this));
         swipeLayout.setRefreshing(true);
 
-        adapter = new FasterAdapter.Builder<User>()
+        adapter = new FasterAdapter.Builder<>()
+                .bind(String.class, new FunPeopleStrategy())
+                .bind(Integer.class, new MeiziStrategy())
+                .bind(User.class, new UserPowerStrategy())
                 .itemClickListener(this)
                 .emptyView(new EmptyLayout(this))
                 .errorView(new ErrorLayout(this))
@@ -77,7 +79,16 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
 
     @Override
     public void onClick(FasterAdapter adapter, View view, int listPosition) {
-        Toast.makeText(this, "点击了列表中第" + listPosition + "项", Toast.LENGTH_SHORT).show();
+        Object item = adapter.getListSnap().get(listPosition);
+        String name = "";
+        if (item instanceof Integer) {
+            name = "妹子";
+        } else if (item instanceof User) {
+            name = "dalao";
+        } else if (item instanceof String) {
+            name = "吃瓜群众";
+        }
+        Toast.makeText(this, "点击了列表中第" + listPosition + "项，" + name, Toast.LENGTH_SHORT).show();
     }
 
 
@@ -87,16 +98,18 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
             @Override
             public void run() {
                 swipeLayout.setRefreshing(false);
-                List<Entry<User>> list = new ArrayList<Entry<User>>();
+                List<Object> list = new ArrayList<Object>();
                 //根据需求设置不同的视图装载策略
                 for (int i = 0; i < 20; i++) {
-                    if (0 == i % 2) {
-                        list.add(new Entry<User>(new User("菜鸡：" + i, i, 0), normalStrategy));
+                    if (0 == i % 3) {
+                        list.add(new User("dalao：" + i, i, 0));
+                    } else if (1 == i % 3) {
+                        list.add(i + "");
                     } else {
-                        list.add(new Entry<User>(new User("dalao：" + i, i, 1), powerStrategy));
+                        list.add(i);
                     }
                 }
-                adapter.setData(list);
+                adapter.setData(adapter.fillByBindStrategy(list));
             }
         }, 1_000);
     }
@@ -116,18 +129,20 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
             case R.id.btn_init_random:
                 //diff
                 //根据需求设置不同的视图装载策略
-                List<Entry<User>> list = new ArrayList<Entry<User>>();
+                List<Object> list = new ArrayList<Object>();
                 for (int i = 0; i < 20; i++) {
-                    if (0 == i % 2) {
-                        list.add(new Entry<User>(new User("菜鸡：" + i, i, 0), normalStrategy));
+                    if (0 == i % 3) {
+                        list.add(new User("dalao：" + i, i, 0));
+                    } else if (1 == i % 3) {
+                        list.add(i + "");
                     } else {
-                        list.add(new Entry<User>(new User("dalao：" + i, i, 1), powerStrategy));
+                        list.add(i);
                     }
                 }
-                adapter.setDataByDiff(list);
+                adapter.setData(adapter.fillByBindStrategy(list));
                 break;
             case R.id.btn_add:
-                adapter.add(new Entry<User>(new User("新增的dalao", 1, 1), powerStrategy));
+                adapter.add(adapter.fillByBindStrategy(-1));
                 break;
             case R.id.btn_remove:
                 if (0 == adapter.getListSnapSize()) {
@@ -137,7 +152,7 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
                 break;
             case R.id.btn_add_random:
                 int addIndex = adapter.getListSnapSize() == 0 ? 0 : new Random().nextInt(adapter.getListSnapSize());
-                adapter.add(addIndex, new Entry<User>(new User("新增的dalao", 1, 1), powerStrategy));
+                adapter.add(addIndex, adapter.fillByBindStrategy(-1));
                 break;
             case R.id.btn_remove_random:
                 if (0 == adapter.getListSnapSize()) {
@@ -185,7 +200,7 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
                     adapter.loadMoreEnd();
                 } else if (new Random().nextInt(6) > 1) {
                     adapter.loadMoreDismiss();
-                    adapter.add(new Entry<User>(new User("新增的dalao", 1, 1), powerStrategy));
+                    adapter.add(adapter.fillByBindStrategy(-1));
                 } else {
                     adapter.loadMoreFailure();
                 }
@@ -197,15 +212,15 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
     public boolean onMenuItemClick(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.btn_switch:
-                if (recyclerview.getLayoutManager() instanceof GridLayoutManager) {
-                    recyclerview.setLayoutManager(new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL));
-                } else if (recyclerview.getLayoutManager() instanceof StaggeredGridLayoutManager) {
-                    recyclerview.setLayoutManager(new LinearLayoutManager(this));
-                } else {
-                    recyclerview.setLayoutManager(new GridLayoutManager(this, 2));
-                }
+//                if (recyclerview.getLayoutManager() instanceof GridLayoutManager) {
+//                    recyclerview.setLayoutManager(new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL));
+//                } else if (recyclerview.getLayoutManager() instanceof StaggeredGridLayoutManager) {
+//                    recyclerview.setLayoutManager(new LinearLayoutManager(this));
+//                } else {
+//                    recyclerview.setLayoutManager(new GridLayoutManager(this, 2));
+//                }
                 //LayoutManager发生变化，手动调用
-                adapter.onAttachedToRecyclerView(recyclerview);
+//                adapter.onAttachedToRecyclerView(recyclerview);
                 break;
             case R.id.btn_function:
                 dialog.show();
