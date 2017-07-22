@@ -6,6 +6,8 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
@@ -20,17 +22,18 @@ import java.util.Random;
  * <pre>
  *      author : TK
  *      time : 2017/7/15
- *      desc :
+ *      desc : 单类型
  * </pre>
  */
-public class SingleActivity extends AppCompatActivity implements FasterAdapter.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
+public class SingleActivity extends AppCompatActivity implements FasterAdapter.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener, FasterAdapter.OnLoadListener, Toolbar.OnMenuItemClickListener {
+    private Toolbar toolbar;
     private SwipeRefreshLayout swipeLayout;
     private RecyclerView recyclerview;
-
 
     private Handler handler = new Handler();
     private FunctionDialog dialog;
     private FasterAdapter<User> adapter;
+
     private UserNormalStrategy strategy = new UserNormalStrategy();
 
     @Override
@@ -39,12 +42,10 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
         setContentView(R.layout.activity_single);
         dialog = new FunctionDialog(this);
         dialog.setOnClickListener(this);
-        findViewById(R.id.btn_function).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dialog.show();
-            }
-        });
+
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.inflateMenu(R.menu.menu_controller);
+        toolbar.setOnMenuItemClickListener(this);
         swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_layout);
         swipeLayout.setOnRefreshListener(this);
         recyclerview = (RecyclerView) findViewById(R.id.recyclerview);
@@ -56,6 +57,8 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
                 .itemClickListener(this)
                 .emptyView(new EmptyLayout(this))
                 .errorView(new ErrorLayout(this))
+                .loadMoreView(new LoadMoreLayout(this))
+                .loadListener(this)
                 .build();
         recyclerview.setAdapter(adapter);
 
@@ -64,7 +67,7 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
 
     @Override
     public void onClick(FasterAdapter adapter, View view, int listPosition) {
-        Toast.makeText(this, "点击了第" + listPosition, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "点击了列表中第" + listPosition + "项", Toast.LENGTH_SHORT).show();
     }
 
 
@@ -75,12 +78,12 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
             public void run() {
                 swipeLayout.setRefreshing(false);
                 List<User> list = new ArrayList<>();
-                for (int i = 0; i < 10; i++) {
-                    list.add(new User("第" + (i + 1) + "个用户", new Random().nextInt(2) > 0, i));
+                for (int i = 0; i < 20; i++) {
+                    list.add(new User("第" + (i + 1) + "个菜鸡", i, 0));
                 }
                 adapter.setData(FasterAdapter.fillBySingleStrategy(list, strategy));
             }
-        }, 1500);
+        }, 1_000);
     }
 
 
@@ -98,28 +101,13 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
             case R.id.btn_init_random:
                 //diff
                 List<User> list = new ArrayList<>();
-                for (int i = 0; i < 10; i++) {
-                    list.add(new User("第" + (i + 1) + "个用户", new Random().nextInt(2) > 0, i));
+                for (int i = 0; i < 20; i++) {
+                    list.add(new User("第" + (i + 1) + "个菜鸡", i, 0));
                 }
                 adapter.setDataByDiff(FasterAdapter.fillBySingleStrategy(list, strategy));
-
-                break;
-            case R.id.btn_swap_random:
-                if (2 > adapter.getListSnapSize()) {
-                    return;
-                }
-                int from = new Random().nextInt(adapter.getListSnapSize());
-                int to = new Random().nextInt(adapter.getListSnapSize());
-                if (to == from) {
-                    to--;
-                    if (to < 0) {
-                        to = adapter.getListSnapSize() - 1;
-                    }
-                }
-                adapter.swap(from, to);
                 break;
             case R.id.btn_add:
-                adapter.add(new Entry<User>(new User("新增用户", true, 1), strategy));
+                adapter.add(new Entry<User>(new User("新增的菜鸡", 1, 0), strategy));
                 break;
             case R.id.btn_remove:
                 if (0 == adapter.getListSnapSize()) {
@@ -129,7 +117,7 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
                 break;
             case R.id.btn_add_random:
                 int addIndex = adapter.getListSnapSize() == 0 ? 0 : new Random().nextInt(adapter.getListSnapSize());
-                adapter.add(addIndex, new Entry<User>(new User("新增用户", true, 1), strategy));
+                adapter.add(addIndex, new Entry<User>(new User("新增的菜鸡", 1, 0), strategy));
                 break;
             case R.id.btn_remove_random:
                 if (0 == adapter.getListSnapSize()) {
@@ -166,5 +154,37 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
                 adapter.setDisplayError(!adapter.isDisplayError());
                 break;
         }
+    }
+
+    @Override
+    public void onLoad() {
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (adapter.getListSnapSize() >= 22) {
+                    adapter.loadMoreEnd();
+                } else {
+                    adapter.loadMoreDismiss();
+                    adapter.add(new Entry<User>(new User("新增的菜鸡", 1, 0), strategy));
+                }
+            }
+        }, 1000);
+    }
+
+    @Override
+    public void onReLoad() {
+
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.btn_switch:
+                break;
+            case R.id.btn_function:
+                dialog.show();
+                break;
+        }
+        return false;
     }
 }

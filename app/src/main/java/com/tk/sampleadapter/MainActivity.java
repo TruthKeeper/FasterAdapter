@@ -20,4 +20,8 @@ public class MainActivity extends AppCompatActivity {
     public void multi(View v) {
         startActivity(new Intent(this, MultiActivity.class));
     }
+
+    public void multi_register(View v) {
+        startActivity(new Intent(this, MultiActivity.class));
+    }
 }

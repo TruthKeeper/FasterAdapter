@@ -22,7 +22,6 @@ public class FunctionDialog extends Dialog {
     private Button btnInit;
     private Button btnClear;
     private Button btnInitRandom;
-    private Button btnSwapRandom;
     private Button btnAdd;
     private Button btnRemove;
     private Button btnAddRandom;
@@ -54,7 +53,6 @@ public class FunctionDialog extends Dialog {
         btnInit = (Button) findViewById(R.id.btn_init);
         btnClear = (Button) findViewById(R.id.btn_clear);
         btnInitRandom = (Button) findViewById(R.id.btn_init_random);
-        btnSwapRandom = (Button) findViewById(R.id.btn_swap_random);
         btnAdd = (Button) findViewById(R.id.btn_add);
         btnRemove = (Button) findViewById(R.id.btn_remove);
         btnAddRandom = (Button) findViewById(R.id.btn_add_random);
@@ -69,7 +67,6 @@ public class FunctionDialog extends Dialog {
         btnInit.setOnClickListener(onClickListener);
         btnClear.setOnClickListener(onClickListener);
         btnInitRandom.setOnClickListener(onClickListener);
-        btnSwapRandom.setOnClickListener(onClickListener);
         btnAdd.setOnClickListener(onClickListener);
         btnRemove.setOnClickListener(onClickListener);
         btnAddRandom.setOnClickListener(onClickListener);

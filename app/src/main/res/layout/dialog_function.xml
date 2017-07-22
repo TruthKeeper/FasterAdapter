@@ -24,12 +24,8 @@
         <Button
             android:id="@+id/btn_init_random"
             style="@style/CommonBtn"
-            android:text="随机数据" />
+            android:text="初始化随机数据" />
 
-        <Button
-            android:id="@+id/btn_swap_random"
-            style="@style/CommonBtn"
-            android:text="随机移动" />
     </LinearLayout>
 
     <LinearLayout

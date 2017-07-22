@@ -10,13 +10,13 @@ package com.tk.sampleadapter;
 
 public class User {
     private String nickname;
-    private boolean gender;
     private int id;
+    private int type;
 
-    public User(String nickname, boolean gender, int id) {
+    public User(String nickname, int id, int type) {
         this.nickname = nickname;
-        this.gender = gender;
         this.id = id;
+        this.type = type;
     }
 
     public String getNickname() {
@@ -27,14 +27,6 @@ public class User {
         this.nickname = nickname;
     }
 
-    public boolean isGender() {
-        return gender;
-    }
-
-    public void setGender(boolean gender) {
-        this.gender = gender;
-    }
-
     public int getId() {
         return id;
     }
@@ -43,15 +35,32 @@ public class User {
         this.id = id;
     }
 
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
         User user = (User) o;
-        return id == user.id;
+
+        if (id != user.id) return false;
+        if (type != user.type) return false;
+        return nickname != null ? nickname.equals(user.nickname) : user.nickname == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = nickname != null ? nickname.hashCode() : 0;
+        result = 31 * result + id;
+        result = 31 * result + type;
+        return result;
     }
 }

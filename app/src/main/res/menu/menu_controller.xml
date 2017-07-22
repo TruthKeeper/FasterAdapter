@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/btn_switch"
+        android:icon="@drawable/icon_switch"
+        android:title="切换布局"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/btn_function"
+        android:icon="@drawable/icon_function"
+        android:title="数据操作"
+        app:showAsAction="always" />
+
+</menu>

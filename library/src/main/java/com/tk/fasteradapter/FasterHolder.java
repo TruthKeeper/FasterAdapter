@@ -310,4 +310,9 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      */
     protected void onDetach() {
     }
+    /**
+     * FasterHolder资源被释放的回调
+     */
+    protected void onRecycle() {
+    }
 }

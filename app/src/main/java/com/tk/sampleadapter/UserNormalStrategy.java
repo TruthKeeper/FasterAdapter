@@ -17,7 +17,7 @@ import com.tk.fasteradapter.Strategy;
 public class UserNormalStrategy extends Strategy<User> {
     @Override
     protected int getItemViewType() {
-        return 1;
+        return R.layout.item_user_normal;
     }
 
     @Override
@@ -25,9 +25,10 @@ public class UserNormalStrategy extends Strategy<User> {
         return R.layout.item_user_normal;
     }
 
+
     @Override
     public void onBindViewHolder(final FasterHolder holder, final User data) {
-        holder.setText(R.id.item, "普通用户：\n" + data.getNickname() + "\n性别：" + (data.isGender() ? "男" : "女"))
+        holder.setText(R.id.item, "菜鸡： " + data.getNickname())
                 .setOnClickListener(R.id.btn_delete, new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
