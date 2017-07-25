@@ -286,8 +286,9 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      */
     public void setEmptyEnabled(boolean emptyEnabled) {
         if (this.isEmptyEnabled != emptyEnabled) {
+            boolean emptyShow = 1 == getEmptyViewSpace();
             isEmptyEnabled = emptyEnabled;
-            if (1 == getEmptyViewSpace()) {
+            if (emptyShow) {
                 notifyDataSetChanged();
             }
         }
@@ -364,8 +365,8 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     public void setHeaderFooterFront(boolean headerFooterFront) {
         if (this.headerFooterFront != headerFooterFront) {
             this.headerFooterFront = headerFooterFront;
-            if ((1 == getHeaderViewSpace() || 1 == getFooterViewSpace())
-                    && (1 == getEmptyViewSpace() || 1 == getErrorViewSpace())) {
+            if (1 == Math.max(getHeaderViewSpace(), getFooterViewSpace())
+                    && 1 == Math.max(getEmptyViewSpace(), getErrorViewSpace())) {
                 //立即刷新
                 notifyDataSetChanged();
             }
@@ -549,7 +550,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         if (0 == mFooterContainer.getChildCount()) {
             if (emptyShow || errorShow) {
                 if (headerFooterFront) {
-                    notifyItemRemoved(0);
+                    notifyItemRemoved(getHeaderViewSpace() + 1);
                 }
             } else {
                 notifyItemRemoved(getHeaderViewSpace() + mList.size());
@@ -1586,11 +1587,11 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         /**
          * 空视图的包裹容器高度是否充满RecyclerView，一般不用对其设置，只有在有头、足视图时需要注意
          *
-         * @param isEmptyMatchParent
+         * @param emptyMatchParent
          * @return
          */
-        public Builder<D> isEmptyMatchParent(boolean isEmptyMatchParent) {
-            this.isEmptyMatchParent = isEmptyMatchParent;
+        public Builder<D> emptyMatchParent(boolean emptyMatchParent) {
+            this.isEmptyMatchParent = emptyMatchParent;
             return this;
         }
 
@@ -1608,11 +1609,11 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         /**
          * 在初始化数据之前可以先设置false来不显示空视图，默认开启
          *
-         * @param isEmptyEnabled
+         * @param emptyEnabled
          * @return
          */
-        public Builder<D> isEmptyEnabled(boolean isEmptyEnabled) {
-            this.isEmptyEnabled = isEmptyEnabled;
+        public Builder<D> emptyEnabled(boolean emptyEnabled) {
+            this.isEmptyEnabled = emptyEnabled;
             return this;
         }
 
@@ -1630,11 +1631,11 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         /**
          * 是否启用上拉加载，默认开启，需设置LoadMoreView才生效
          *
-         * @param isLoadMoreEnabled
+         * @param loadMoreEnabled
          * @return
          */
-        public Builder<D> isLoadMoreEnabled(boolean isLoadMoreEnabled) {
-            this.isLoadMoreEnabled = isLoadMoreEnabled;
+        public Builder<D> loadMoreEnabled(boolean loadMoreEnabled) {
+            this.isLoadMoreEnabled = loadMoreEnabled;
             return this;
         }
 
