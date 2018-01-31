@@ -13,16 +13,16 @@ import com.tk.sampleadapter.User;
 /**
  * <pre>
  *      author : TK
- *      time : 2017/7/15
+ *      time : 2018/1/31
  *      desc :
  * </pre>
  */
 
-public class UserNormalStrategy extends Strategy<User> {
+public class UserStarStrategy extends Strategy<User> {
 
     @Override
     public int layoutId() {
-        return R.layout.item_user_normal;
+        return R.layout.item_user_star;
     }
 
     @Override
@@ -30,10 +30,18 @@ public class UserNormalStrategy extends Strategy<User> {
         return new FasterHolder(LayoutInflater.from(parent.getContext()).inflate(layoutId(), parent, false)) {
             @Override
             protected void onCreate() {
-                setOnClickListener(R.id.btn_delete, new View.OnClickListener() {
+                final FasterHolder holder = this;
+                setOnClickListener(R.id.btn_star, new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                       getAdapter().remove(getListPosition());
+                        User user = (User) getAdapter().getListItem(getListPosition());
+                        if (isSelect(holder, user.getId())) {
+                            v.setSelected(false);
+                            unSelect(holder, user.getId());
+                        } else {
+                            v.setSelected(true);
+                            select(holder, user.getId());
+                        }
                     }
                 });
             }
@@ -42,6 +50,7 @@ public class UserNormalStrategy extends Strategy<User> {
 
     @Override
     public void onBindViewHolder(final FasterHolder holder, final User data) {
-        holder.setText(R.id.name, "普通用户： " + data.getNickname());
+        holder.setText(R.id.name, "明星： " + data.getNickname())
+                .setSelected(R.id.btn_star, isSelect(holder, data.getId()));
     }
 }

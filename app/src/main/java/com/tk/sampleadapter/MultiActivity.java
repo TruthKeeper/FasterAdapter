@@ -15,13 +15,16 @@ import android.widget.Toast;
 
 import com.tk.fasteradapter.Entry;
 import com.tk.fasteradapter.FasterAdapter;
+import com.tk.fasteradapter.MultiType;
+import com.tk.fasteradapter.Strategy;
 import com.tk.sampleadapter.layout.EmptyLayout;
 import com.tk.sampleadapter.layout.ErrorLayout;
 import com.tk.sampleadapter.layout.FooterLayout;
 import com.tk.sampleadapter.layout.HeaderLayout;
 import com.tk.sampleadapter.layout.LoadMoreLayout;
 import com.tk.sampleadapter.strategy.UserNormalStrategy;
-import com.tk.sampleadapter.strategy.UserPowerStrategy;
+import com.tk.sampleadapter.strategy.UserStarStrategy;
+import com.tk.sampleadapter.strategy.UserVIPStrategy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +47,8 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
     private FasterAdapter<User> adapter;
 
     private UserNormalStrategy normalStrategy = new UserNormalStrategy();
-    private UserPowerStrategy powerStrategy = new UserPowerStrategy();
+    private UserStarStrategy starStrategy = new UserStarStrategy();
+    private UserVIPStrategy vipStrategy = new UserVIPStrategy();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,20 +57,33 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
         dialog = new FunctionDialog(this);
         dialog.setOnClickListener(this);
 
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar = findViewById(R.id.toolbar);
         toolbar.inflateMenu(R.menu.menu_controller);
         toolbar.setOnMenuItemClickListener(this);
-        swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_layout);
+        swipeLayout = findViewById(R.id.swipe_layout);
         swipeLayout.setOnRefreshListener(this);
-        recyclerview = (RecyclerView) findViewById(R.id.recyclerview);
+        recyclerview = findViewById(R.id.recyclerview);
         recyclerview.setHasFixedSize(true);
         recyclerview.setLayoutManager(new LinearLayoutManager(this));
         swipeLayout.setRefreshing(true);
 
         adapter = new FasterAdapter.Builder<User>()
                 .itemClickListener(this)
+                .bind(User.class, new MultiType<User>() {
+                    @Override
+                    public Strategy<User> bind(User user) {
+                        if (user.isVip()) {
+                            return vipStrategy;
+                        } else if (user.isStar()) {
+                            return starStrategy;
+                        } else {
+                            return normalStrategy;
+                        }
+                    }
+                })
                 .emptyView(new EmptyLayout(this))
                 .errorView(new ErrorLayout(this))
+                .loadMoreEnabled(true)
                 .loadMoreView(new LoadMoreLayout(this))
                 .loadListener(this)
                 .build();
@@ -76,7 +93,7 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
     }
 
     @Override
-    public void onClick(FasterAdapter adapter, View view, int listPosition) {
+    public void onItemClick(FasterAdapter adapter, View view, int listPosition) {
         Toast.makeText(this, "点击了列表中第" + listPosition + "项", Toast.LENGTH_SHORT).show();
     }
 
@@ -88,12 +105,13 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
             public void run() {
                 swipeLayout.setRefreshing(false);
                 List<Entry<User>> list = new ArrayList<Entry<User>>();
-                //根据需求设置不同的视图装载策略
                 for (int i = 0; i < 20; i++) {
                     if (0 == i % 2) {
-                        list.add(new Entry<User>(new User("菜鸡：" + i, i, 0), normalStrategy));
+                        list.add(Entry.create(new User("ID：" + i, i, false, false, null)));
+                    } else if (0 == i % 3) {
+                        list.add(Entry.create(new User("ID：" + i, i, true, false, "VIP简介：哈哈哈哈")));
                     } else {
-                        list.add(new Entry<User>(new User("dalao：" + i, i, 1), powerStrategy));
+                        list.add(Entry.create(new User("ID：" + i, i, false, true, null)));
                     }
                 }
                 adapter.setData(list);
@@ -115,35 +133,36 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
                 break;
             case R.id.btn_init_random:
                 //diff
-                //根据需求设置不同的视图装载策略
                 List<Entry<User>> list = new ArrayList<Entry<User>>();
                 for (int i = 0; i < 20; i++) {
                     if (0 == i % 2) {
-                        list.add(new Entry<User>(new User("菜鸡：" + i, i, 0), normalStrategy));
+                        list.add(Entry.create(new User("ID：" + i, i, false, false, null)));
+                    } else if (0 == i % 3) {
+                        list.add(Entry.create(new User("ID：" + i, i, true, false, "VIP简介：哈哈哈哈")));
                     } else {
-                        list.add(new Entry<User>(new User("dalao：" + i, i, 1), powerStrategy));
+                        list.add(Entry.create(new User("ID：" + i, i, false, true, null)));
                     }
                 }
                 adapter.setDataByDiff(list);
                 break;
             case R.id.btn_add:
-                adapter.add(new Entry<User>(new User("新增的dalao", 1, 1), powerStrategy));
+                addRandom(adapter.getListSize());
                 break;
             case R.id.btn_remove:
-                if (0 == adapter.getListSnapSize()) {
+                if (0 == adapter.getListSize()) {
                     return;
                 }
-                adapter.remove(adapter.getListSnapSize() - 1);
+                adapter.remove(adapter.getListSize() - 1);
                 break;
             case R.id.btn_add_random:
-                int addIndex = adapter.getListSnapSize() == 0 ? 0 : new Random().nextInt(adapter.getListSnapSize());
-                adapter.add(addIndex, new Entry<User>(new User("新增的dalao", 1, 1), powerStrategy));
+                int addIndex = adapter.getListSize() == 0 ? 0 : new Random().nextInt(adapter.getListSize());
+                addRandom(addIndex);
                 break;
             case R.id.btn_remove_random:
-                if (0 == adapter.getListSnapSize()) {
+                if (0 == adapter.getListSize()) {
                     return;
                 }
-                int removeIndex = new Random().nextInt(adapter.getListSnapSize());
+                int removeIndex = new Random().nextInt(adapter.getListSize());
                 adapter.remove(removeIndex);
                 break;
             case R.id.btn_add_header:
@@ -176,16 +195,27 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
         }
     }
 
+    private void addRandom(int addIndex) {
+        int random = new Random().nextInt(6);
+        if (0 == random % 2) {
+            adapter.add(addIndex, Entry.create(new User("新增ID：-1", -1, false, false, null)));
+        } else if (0 == random % 3) {
+            adapter.add(addIndex, Entry.create(new User("新增ID：-1", -1, true, false, "VIP简介：哈哈哈哈")));
+        } else {
+            adapter.add(addIndex, Entry.create(new User("新增ID：-1", -1, false, true, null)));
+        }
+    }
+
     @Override
     public void onLoad() {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (adapter.getListSnapSize() >= 22) {
+                if (adapter.getListSize() >= 22) {
                     adapter.loadMoreEnd();
                 } else if (new Random().nextInt(6) > 1) {
                     adapter.loadMoreDismiss();
-                    adapter.add(new Entry<User>(new User("新增的dalao", 1, 1), powerStrategy));
+                    addRandom(adapter.getListSize());
                 } else {
                     adapter.loadMoreFailure();
                 }

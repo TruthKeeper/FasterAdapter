@@ -20,12 +20,12 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center_vertical"
-            android:text="List&lt;T&gt;集合中是同种类型的数据，并且视图是单类型条目的场景" />
+            android:text="数据类型、视图类型一对一的场景" />
 
         <Button
+            android:id="@+id/btn_1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="single"
             android:text="立即前往" />
     </LinearLayout>
 
@@ -42,12 +42,12 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center_vertical"
-            android:text="List&lt;T&gt;集合中是同种类型的数据，并且视图是多种类型条目的场景" />
+            android:text="数据类型、视图类型一对多的场景" />
 
         <Button
+            android:id="@+id/btn_2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="multi"
             android:text="立即前往" />
     </LinearLayout>
 
@@ -64,14 +64,15 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center_vertical"
-            android:text="List&lt;Object&gt;集合中是多种类型的数据，通过自定义的方式绑定 数据类型 - 视图策略 " />
+            android:text="数据类型、视图类型多对多的场景" />
 
         <Button
+            android:id="@+id/btn_3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="multi_bind"
             android:text="立即前往" />
     </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="72dp"
@@ -85,12 +86,12 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center_vertical"
-            android:text="NestedScrollView场景下兼容上拉加载" />
+            android:text="" />
 
         <Button
+            android:id="@+id/btn_4"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="nested"
             android:text="立即前往" />
     </LinearLayout>
 </LinearLayout>

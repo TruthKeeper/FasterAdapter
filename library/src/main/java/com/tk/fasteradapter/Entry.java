@@ -9,10 +9,22 @@ package com.tk.fasteradapter;
  */
 
 public class Entry<T> {
-    private T data;
-    private Strategy<T> strategy;
+    private T data = null;
+    private Strategy<T> strategy = null;
 
-    public Entry(T data, Strategy<T> strategy) {
+    public static <T> Entry<T> create(T data) {
+        return new Entry<T>(data);
+    }
+
+    public static <T> Entry<T> create(T data, Strategy<T> strategy) {
+        return new Entry<T>(data, strategy);
+    }
+
+    private Entry(T data) {
+        this.data = data;
+    }
+
+    private Entry(T data, Strategy<T> strategy) {
         this.data = data;
         this.strategy = strategy;
     }

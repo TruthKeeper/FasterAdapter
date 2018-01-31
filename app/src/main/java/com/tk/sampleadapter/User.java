@@ -11,12 +11,16 @@ package com.tk.sampleadapter;
 public class User {
     private String nickname;
     private int id;
-    private int type;
+    private boolean vip;
+    private boolean star;
+    private String desc;
 
-    public User(String nickname, int id, int type) {
+    public User(String nickname, int id, boolean vip, boolean star, String desc) {
         this.nickname = nickname;
         this.id = id;
-        this.type = type;
+        this.vip = vip;
+        this.star = star;
+        this.desc = desc;
     }
 
     public String getNickname() {
@@ -35,32 +39,27 @@ public class User {
         this.id = id;
     }
 
-    public int getType() {
-        return type;
+    public boolean isVip() {
+        return vip;
     }
 
-    public void setType(int type) {
-        this.type = type;
+    public void setVip(boolean vip) {
+        this.vip = vip;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        User user = (User) o;
-
-        if (id != user.id) return false;
-        if (type != user.type) return false;
-        return nickname != null ? nickname.equals(user.nickname) : user.nickname == null;
-
+    public boolean isStar() {
+        return star;
     }
 
-    @Override
-    public int hashCode() {
-        int result = nickname != null ? nickname.hashCode() : 0;
-        result = 31 * result + id;
-        result = 31 * result + type;
-        return result;
+    public void setStar(boolean star) {
+        this.star = star;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
     }
 }

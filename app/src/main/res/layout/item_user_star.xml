@@ -12,7 +12,7 @@
     <ImageView
         android:layout_width="42dp"
         android:layout_height="42dp"
-        android:src="@drawable/icon_user_normal" />
+        android:src="@drawable/icon_user_star" />
 
     <TextView
         android:id="@+id/name"
@@ -24,10 +24,10 @@
         android:textSize="16sp" />
 
     <ImageView
-        android:id="@+id/btn_delete"
+        android:id="@+id/btn_star"
         android:layout_width="52dp"
         android:layout_height="52dp"
         android:padding="12dp"
-        android:src="@drawable/icon_delete" />
+        android:src="@drawable/selector_heart" />
 </LinearLayout>
 

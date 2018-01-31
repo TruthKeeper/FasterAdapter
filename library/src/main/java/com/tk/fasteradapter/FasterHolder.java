@@ -5,11 +5,12 @@ import android.graphics.drawable.Drawable;
 import android.support.annotation.ColorInt;
 import android.support.annotation.ColorRes;
 import android.support.annotation.DrawableRes;
+import android.support.annotation.FloatRange;
 import android.support.annotation.IdRes;
 import android.support.annotation.StringRes;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.View;
 import android.widget.CompoundButton;
@@ -34,7 +35,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
     /**
      * 持有FasterAdapter的引用，考虑到业务场景也都是内部类隐式持有外部类引用
      */
-    private FasterAdapter<?> mAdapter = null;
+    private FasterAdapter mAdapter = null;
     /**
      * 存放view对象
      */
@@ -42,15 +43,20 @@ public class FasterHolder extends RecyclerView.ViewHolder {
     /**
      * 放置额外的对象标记
      */
-    private SparseArray<Object> mTags = null;
+    private SparseArray<Object> mExtra = null;
+
     public FasterHolder(View itemView) {
         super(itemView);
         mViews = new SparseArray<>();
-        onCreate(itemView);
     }
 
-    public void setAdapter(FasterAdapter<?> mAdapter) {
-        this.mAdapter = mAdapter;
+    /**
+     * 依附
+     *
+     * @param adapter
+     */
+    void attach(FasterAdapter adapter) {
+        this.mAdapter = adapter;
     }
 
     /**
@@ -59,7 +65,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public <T> FasterAdapter<T> getAdapter() {
+    public final <T> FasterAdapter<T> getAdapter() {
         return (FasterAdapter<T>) mAdapter;
     }
 
@@ -68,8 +74,17 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      *
      * @return
      */
-    public Context getContext() {
+    public final Context getContext() {
         return itemView.getContext();
+    }
+
+    /**
+     * 获取集合中的位置
+     *
+     * @return
+     */
+    public final int getListPosition() {
+        return Math.max(getAdapterPosition() - mAdapter.getHeaderSpace(), 0);
     }
 
     /**
@@ -79,7 +94,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public <T extends View> T findViewById(@IdRes int viewId) {
+    public final <T extends View> T findViewById(@IdRes int viewId) {
         View view = mViews.get(viewId);
         if (null == view) {
             view = itemView.findViewById(viewId);
@@ -95,7 +110,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param drawable
      * @return
      */
-    public FasterHolder setImage(@IdRes int viewId, Drawable drawable) {
+    public final FasterHolder setImage(@IdRes int viewId, Drawable drawable) {
         this.<ImageView>findViewById(viewId).setImageDrawable(drawable);
         return this;
     }
@@ -107,7 +122,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param resId
      * @return
      */
-    public FasterHolder setImage(@IdRes int viewId, @DrawableRes int resId) {
+    public final FasterHolder setImage(@IdRes int viewId, @DrawableRes int resId) {
         this.<ImageView>findViewById(viewId).setImageResource(resId);
         return this;
     }
@@ -119,7 +134,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param resId
      * @return
      */
-    public FasterHolder setText(@IdRes int viewId, @StringRes int resId) {
+    public final FasterHolder setText(@IdRes int viewId, @StringRes int resId) {
         this.<TextView>findViewById(viewId).setText(resId);
         return this;
     }
@@ -131,7 +146,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param text
      * @return
      */
-    public FasterHolder setText(@IdRes int viewId, CharSequence text) {
+    public final FasterHolder setText(@IdRes int viewId, CharSequence text) {
         this.<TextView>findViewById(viewId).setText(text);
         return this;
     }
@@ -144,8 +159,8 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param nullText
      * @return
      */
-    public FasterHolder setTextOrNull(@IdRes int viewId, CharSequence text, CharSequence nullText) {
-        this.<TextView>findViewById(viewId).setText(TextUtils.isEmpty(text) ? nullText : text);
+    public final FasterHolder setTextOrNull(@IdRes int viewId, CharSequence text, CharSequence nullText) {
+        this.<TextView>findViewById(viewId).setText(EmptyUtils.isEmpty(text) ? nullText : text);
         return this;
     }
 
@@ -156,7 +171,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param colorRes
      * @return
      */
-    public FasterHolder setTextColorByRes(@IdRes int viewId, @ColorRes int colorRes) {
+    public final FasterHolder setTextColorByRes(@IdRes int viewId, @ColorRes int colorRes) {
         this.<TextView>findViewById(viewId).setTextColor(ContextCompat.getColor(itemView.getContext(), colorRes));
         return this;
     }
@@ -168,7 +183,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param textColor
      * @return
      */
-    public FasterHolder setTextColorByInt(@IdRes int viewId, @ColorInt int textColor) {
+    public final FasterHolder setTextColorByInt(@IdRes int viewId, @ColorInt int textColor) {
         this.<TextView>findViewById(viewId).setTextColor(textColor);
         return this;
     }
@@ -180,8 +195,19 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param textSize
      * @return
      */
-    public FasterHolder setTextSize(@IdRes int viewId, float textSize) {
+    public final FasterHolder setTextSize(@IdRes int viewId, float textSize) {
         this.<TextView>findViewById(viewId).setTextSize(textSize);
+        return this;
+    }
+
+    /**
+     * 设置背景
+     *
+     * @param viewId
+     * @return
+     */
+    public FasterHolder setBackground(@IdRes int viewId, Drawable background) {
+        ViewCompat.setBackground(this.findViewById(viewId), background);
         return this;
     }
 
@@ -192,7 +218,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param progress
      * @return
      */
-    public FasterHolder setProgress(@IdRes int viewId, int progress) {
+    public final FasterHolder setProgress(@IdRes int viewId, int progress) {
         this.<ProgressBar>findViewById(viewId).setProgress(progress);
         return this;
     }
@@ -201,11 +227,23 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * 设置是否可见
      *
      * @param viewId
-     * @param visibility
+     * @param visible
      * @return
      */
-    public FasterHolder setVisibility(@IdRes int viewId, int visibility) {
-        findViewById(viewId).setVisibility(visibility);
+    public final FasterHolder setVisible(@IdRes int viewId, boolean visible) {
+        findViewById(viewId).setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
+        return this;
+    }
+
+    /**
+     * 设置是否占位
+     *
+     * @param viewId
+     * @param visible
+     * @return
+     */
+    public final FasterHolder setGone(@IdRes int viewId, boolean visible) {
+        findViewById(viewId).setVisibility(visible ? View.VISIBLE : View.GONE);
         return this;
     }
 
@@ -216,7 +254,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param checked
      * @return
      */
-    public FasterHolder setChecked(@IdRes int viewId, boolean checked) {
+    public final FasterHolder setChecked(@IdRes int viewId, boolean checked) {
         this.<CompoundButton>findViewById(viewId).setChecked(checked);
         return this;
     }
@@ -228,7 +266,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param selected
      * @return
      */
-    public FasterHolder setSelected(@IdRes int viewId, boolean selected) {
+    public final FasterHolder setSelected(@IdRes int viewId, boolean selected) {
         findViewById(viewId).setSelected(selected);
         return this;
     }
@@ -240,8 +278,43 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param enabled
      * @return
      */
-    public FasterHolder setEnabled(@IdRes int viewId, boolean enabled) {
+    public final FasterHolder setEnabled(@IdRes int viewId, boolean enabled) {
         findViewById(viewId).setEnabled(enabled);
+        return this;
+    }
+
+    /**
+     * 设置透明度
+     *
+     * @param viewId
+     * @param alpha
+     * @return
+     */
+    public final FasterHolder setAlpha(@IdRes int viewId, @FloatRange(from = 0.0, to = 1.0) float alpha) {
+        findViewById(viewId).setAlpha(alpha);
+        return this;
+    }
+
+    /**
+     * 设置额外数据
+     *
+     * @param viewId
+     * @param tag
+     */
+    public final FasterHolder setTag(@IdRes int viewId, Object tag) {
+        findViewById(viewId).setTag(tag);
+        return this;
+    }
+
+    /**
+     * 设置额外数据
+     *
+     * @param viewId
+     * @param key
+     * @param tag
+     */
+    public final FasterHolder setTag(@IdRes int viewId, int key, Object tag) {
+        findViewById(viewId).setTag(key, tag);
         return this;
     }
 
@@ -252,7 +325,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param listener
      * @return
      */
-    public FasterHolder setOnClickListener(@IdRes int viewId, View.OnClickListener listener) {
+    public final FasterHolder setOnClickListener(@IdRes int viewId, View.OnClickListener listener) {
         findViewById(viewId).setOnClickListener(listener);
         return this;
     }
@@ -264,45 +337,44 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      * @param listener
      * @return
      */
-    public FasterHolder setOnLongClickListener(@IdRes int viewId, View.OnLongClickListener listener) {
+    public final FasterHolder setOnLongClickListener(@IdRes int viewId, View.OnLongClickListener listener) {
         findViewById(viewId).setOnLongClickListener(listener);
         return this;
     }
 
     /**
-     * 设置一个额外存储Tag
+     * 设置额外存储数据
      *
-     * @param tagKey
-     * @param tag
+     * @param key
+     * @param extra
      */
-    public void setTag(int tagKey, Object tag) {
-        if (null == mTags) {
-            mTags = new SparseArray<>(2);
+    public final FasterHolder setExtra(int key, Object extra) {
+        if (null == mExtra) {
+            mExtra = new SparseArray<>(2);
         }
-        mTags.put(tagKey, tag);
+        mExtra.put(key, extra);
+        return this;
     }
 
     /**
-     * 获取额外存储Tag
+     * 获取额外存储数据
      *
-     * @param tagKey
+     * @param key
      * @param <T>
      * @return
      */
     @SuppressWarnings("unchecked")
-    public <T> T getTag(int tagKey) {
-        if (null == mTags) {
+    public final <T> T getExtra(int key) {
+        if (null == mExtra) {
             return null;
         }
-        return (T) mTags.get(tagKey);
+        return (T) mExtra.get(key);
     }
 
     /**
      * FasterHolder创建，可以扩展用于监听点击事件等等
-     *
-     * @param itemView
      */
-    protected void onCreate(View itemView) {
+    protected void onCreate() {
     }
 
     /**
@@ -310,6 +382,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
      */
     protected void onDetach() {
     }
+
     /**
      * FasterHolder资源被释放的回调
      */

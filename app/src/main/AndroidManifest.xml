@@ -19,7 +19,6 @@
         <activity android:name=".SingleActivity" />
         <activity android:name=".MultiActivity" />
         <activity android:name=".MultiBindActivity" />
-        <activity android:name=".NestedActivity" />
     </application>
 
 </manifest>

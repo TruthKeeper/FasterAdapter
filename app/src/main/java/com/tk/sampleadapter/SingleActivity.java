@@ -51,12 +51,12 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
         dialog = new FunctionDialog(this);
         dialog.setOnClickListener(this);
 
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar = findViewById(R.id.toolbar);
         toolbar.inflateMenu(R.menu.menu_controller);
         toolbar.setOnMenuItemClickListener(this);
-        swipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_layout);
+        swipeLayout = findViewById(R.id.swipe_layout);
         swipeLayout.setOnRefreshListener(this);
-        recyclerview = (RecyclerView) findViewById(R.id.recyclerview);
+        recyclerview = findViewById(R.id.recyclerview);
         recyclerview.setHasFixedSize(true);
         recyclerview.setLayoutManager(new LinearLayoutManager(this));
         swipeLayout.setRefreshing(true);
@@ -65,6 +65,7 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
                 .itemClickListener(this)
                 .emptyView(new EmptyLayout(this))
                 .errorView(new ErrorLayout(this))
+                .loadMoreEnabled(true)
                 .loadMoreView(new LoadMoreLayout(this))
                 .loadListener(this)
                 .build();
@@ -74,7 +75,7 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
     }
 
     @Override
-    public void onClick(FasterAdapter adapter, View view, int listPosition) {
+    public void onItemClick(FasterAdapter adapter, View view, int listPosition) {
         Toast.makeText(this, "点击了列表中第" + listPosition + "项", Toast.LENGTH_SHORT).show();
     }
 
@@ -87,9 +88,9 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
                 swipeLayout.setRefreshing(false);
                 List<User> list = new ArrayList<>();
                 for (int i = 0; i < 20; i++) {
-                    list.add(new User("第" + (i + 1) + "个菜鸡", i, 0));
+                    list.add(new User("ID：" + i, i, false, false, null));
                 }
-                adapter.setData(FasterAdapter.fillBySingleStrategy(list, strategy));
+                adapter.setData(list, strategy);
             }
         }, 1_000);
     }
@@ -110,28 +111,29 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
                 //diff
                 List<User> list = new ArrayList<>();
                 for (int i = 0; i < 20; i++) {
-                    list.add(new User("第" + (i + 1) + "个菜鸡", i, 0));
+                    list.add(new User("ID：" + i, i, false, false, null));
                 }
-                adapter.setDataByDiff(FasterAdapter.fillBySingleStrategy(list, strategy));
+                adapter.setDataByDiff(list, strategy);
                 break;
             case R.id.btn_add:
-                adapter.add(new Entry<User>(new User("新增的菜鸡", 1, 0), strategy));
+                adapter.add(Entry.create(new User("新增ID：-1", -1, false, false, null), strategy));
                 break;
             case R.id.btn_remove:
-                if (0 == adapter.getListSnapSize()) {
+                if (0 == adapter.getListSize()) {
                     return;
                 }
-                adapter.remove(adapter.getListSnapSize() - 1);
+                adapter.remove(adapter.getListSize() - 1);
                 break;
             case R.id.btn_add_random:
-                int addIndex = adapter.getListSnapSize() == 0 ? 0 : new Random().nextInt(adapter.getListSnapSize());
-                adapter.add(addIndex, new Entry<User>(new User("新增的菜鸡", 1, 0), strategy));
+                int addIndex = adapter.getListSize() == 0 ? 0 : new Random().nextInt(adapter.getListSize());
+
+                adapter.add(addIndex, Entry.create(new User("新增ID：-1", -1, false, false, null), strategy));
                 break;
             case R.id.btn_remove_random:
-                if (0 == adapter.getListSnapSize()) {
+                if (0 == adapter.getListSize()) {
                     return;
                 }
-                int removeIndex = new Random().nextInt(adapter.getListSnapSize());
+                int removeIndex = new Random().nextInt(adapter.getListSize());
                 adapter.remove(removeIndex);
                 break;
             case R.id.btn_add_header:
@@ -169,11 +171,11 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (adapter.getListSnapSize() >= 22) {
+                if (adapter.getListSize() >= 22) {
                     adapter.loadMoreEnd();
                 } else if (new Random().nextInt(6) > 1) {
                     adapter.loadMoreDismiss();
-                    adapter.add(new Entry<User>(new User("新增的菜鸡", 1, 0), strategy));
+                    adapter.add(Entry.create(new User("新增ID：-1", -1, false, false, null), strategy));
                 } else {
                     adapter.loadMoreFailure();
                 }

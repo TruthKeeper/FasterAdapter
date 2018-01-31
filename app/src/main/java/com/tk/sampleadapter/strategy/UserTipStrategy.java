@@ -8,25 +8,20 @@ import com.tk.sampleadapter.R;
 /**
  * <pre>
  *      author : TK
- *      time : 2017/7/22
+ *      time : 2018/1/31
  *      desc :
  * </pre>
  */
 
-public class FunPeopleStrategy extends Strategy<String> {
-    @Override
-    protected int getItemViewType() {
-        return R.layout.item_fun_people;
-    }
+public class UserTipStrategy extends Strategy<String> {
 
     @Override
     public int layoutId() {
-        return R.layout.item_fun_people;
+        return R.layout.item_user_tip;
     }
-
 
     @Override
     public void onBindViewHolder(final FasterHolder holder, final String string) {
-        holder.setText(R.id.item, "吃瓜群众：" + string);
+        holder.setText(R.id.tip, string);
     }
 }
