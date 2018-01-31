@@ -135,7 +135,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     /**
      * 多数据类型和多视图类型的一对多、多对多绑定关系
      */
-    private ArrayMap<Class, Pair<Strategy, MultiType>> mBindMap;
+    private final ArrayMap<Class, Pair<Strategy, MultiType>> mBindMap;
     /**
      * 是否显示错误视图，未设置errorView时无效
      */
@@ -143,7 +143,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     /**
      * 存放对FasterHolder额外数据保存的Array
      */
-    private LongSparseArray<Object> array = null;
+    private final LongSparseArray<Object> array;
     /**
      * 上拉加载的滚动监听
      */
@@ -201,7 +201,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     /**
      * List集合数据大小变化器
      */
-    private ListCountTransformer mListCountTransformer;
+    private final ListCountTransformer mListCountTransformer;
 
     private FasterAdapter(Builder<T> builder) {
         mOnItemClickListener = builder.itemClickListener;
