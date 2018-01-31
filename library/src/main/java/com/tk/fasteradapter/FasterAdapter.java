@@ -1511,8 +1511,8 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
             nextIndex = listIterator.nextIndex();
             if (predicate.process(listIterator.next().getData())) {
                 listIterator.remove();
-                if (!immediately && 0 == getErrorSpace()) {
-                    notifyItemRemoved(nextIndex);
+                if (!immediately && Math.max(getEmptySpace(), getErrorSpace()) == 0) {
+                    notifyItemRemoved(nextIndex + getHeaderSpace());
                 }
                 removed = true;
             }
