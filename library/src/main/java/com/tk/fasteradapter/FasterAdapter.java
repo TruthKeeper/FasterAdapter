@@ -46,7 +46,7 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
  *          <li>封装常用的集合 API</li>
  *          <li>封装常用的ViewHolder API</li>
  *          <li>类似选中业务场景下，封装SparseArray记录对FasterHolder的数据保存</li>
- *          <li>final不允许继承FasterAdapter</li>
+ *          <li>final不允许继承FasterAdapter，支持Adapter变长模式{@link FasterAdapter.Builder#listCountTransformer(ListCountTransformer)}</li>
  *          </ul>
  * </pre>
  */
@@ -61,7 +61,8 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     public static final int TYPE_HEADER = -10002;
     public static final int TYPE_FOOTER = -10003;
     public static final int TYPE_LOAD = -10004;
-    public static final int[] INNER_TYPE = new int[]{TYPE_EMPTY, TYPE_ERROR, TYPE_HEADER, TYPE_FOOTER, TYPE_LOAD};
+    public static final int TYPE_VOID_DATA = -10005;
+    public static final int[] INNER_TYPE = new int[]{TYPE_EMPTY, TYPE_ERROR, TYPE_HEADER, TYPE_FOOTER, TYPE_LOAD, TYPE_VOID_DATA};
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({Status.LOAD_IDLE, Status.LOAD_ERROR, Status.LOAD_END, Status.LOAD_ING})
@@ -197,6 +198,10 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * 布局管理器
      */
     private RecyclerView.LayoutManager mLayoutManager;
+    /**
+     * List集合数据大小变化器
+     */
+    private ListCountTransformer mListCountTransformer;
 
     private FasterAdapter(Builder<T> builder) {
         mOnItemClickListener = builder.itemClickListener;
@@ -254,6 +259,11 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         }
         mBindMap = builder.bindMap;
         array = new LongSparseArray<>(2);
+        mListCountTransformer = builder.listCountTransformer;
+    }
+
+    public static <D> FasterAdapter.Builder<D> build() {
+        return new FasterAdapter.Builder<D>();
     }
 
     /**
@@ -784,6 +794,37 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
                 return createHolder(this, mFooterContainer);
             case TYPE_LOAD:
                 return createHolder(this, mLoadMoreContainer);
+            case TYPE_VOID_DATA:
+                if (mListCountTransformer == null) {
+                    throw new NullPointerException("position >  mList.size() - 1!");
+                }
+                final Strategy<Void> voidStrategy = mListCountTransformer.newVoidDataStrategy();
+                if (voidStrategy == null) {
+                    throw new NullPointerException("ListCountTransformer newVoidDataStrategy return null !");
+                }
+                final FasterHolder voidStrategyHolder = voidStrategy.createHolder(parent);
+                //依附Adapter
+                voidStrategyHolder.attach(this);
+                //设置监听
+                if (null != mOnItemClickListener) {
+                    voidStrategyHolder.itemView.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            mOnItemClickListener.onItemClick(FasterAdapter.this, v, voidStrategyHolder.getAdapterPosition() - getHeaderSpace());
+                        }
+                    });
+                }
+                if (null != mOnItemLongClickListener) {
+                    voidStrategyHolder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                        @Override
+                        public boolean onLongClick(View v) {
+                            mOnItemLongClickListener.onItemLongClick(FasterAdapter.this, v, voidStrategyHolder.getAdapterPosition() - getHeaderSpace());
+                            return false;
+                        }
+                    });
+                }
+                voidStrategyHolder.onCreate();
+                return voidStrategyHolder;
             default:
                 for (final Entry<T> entry : mList) {
                     if (null != entry.getStrategy()) {
@@ -848,6 +889,11 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
             case TYPE_FOOTER:
                 break;
             case TYPE_LOAD:
+                break;
+            case TYPE_VOID_DATA:
+                //onCreateViewHolder已经校验过了
+                final Strategy<Void> voidStrategy = mListCountTransformer.newVoidDataStrategy();
+                voidStrategy.onBindViewHolder(holder, null, payloads);
                 break;
             default:
                 final int listPosition = position - getHeaderSpace();
@@ -923,7 +969,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
             return TYPE_HEADER;
         }
         //足视图位置
-        int footerPosition = 1 == getFooterSpace() ? getHeaderSpace() + mList.size() : -1;
+        int footerPosition = 1 == getFooterSpace() ? getHeaderSpace() + getValidListCount() : -1;
         if (-1 != footerPosition) {
             //存在足视图
             if (position < footerPosition) {
@@ -956,8 +1002,12 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      */
     private int getItemViewTypeFromList(int position) {
         int listPosition = position - getHeaderSpace();
+        if (listPosition > mList.size() - 1) {
+            //超过限制，即mListCountTransformer#newListDataCount返回了更大的数值
+            return TYPE_VOID_DATA;
+        }
         Entry<T> entry = mList.get(listPosition);
-        //方法会先于onCreateHolder调用
+        //方法会先于onCreateViewHolder调用
         if (entry.getStrategy() == null && mBindMap != null) {
             Pair<Strategy, MultiType> multiTypePair = mBindMap.get(entry.getData().getClass());
             if (multiTypePair == null) {
@@ -987,14 +1037,23 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
                 return getHeaderSpace() + 1 + getFooterSpace();
             }
             //头+体+足+加载视图
-            return getHeaderSpace() + mList.size() + getFooterSpace() + getLoadMoreSpace();
+            return getHeaderSpace() + getValidListCount() + getFooterSpace() + getLoadMoreSpace();
         } else {
             if (1 == Math.max(getErrorSpace(), getEmptySpace())) {
                 //占位视图
                 return 1;
             }
             //头+体+足+加载视图
-            return getHeaderSpace() + mList.size() + getFooterSpace() + getLoadMoreSpace();
+            return getHeaderSpace() + getValidListCount() + getFooterSpace() + getLoadMoreSpace();
+        }
+    }
+
+    private int getValidListCount() {
+        int count = mList.size();
+        if (mListCountTransformer != null) {
+            return mListCountTransformer.newListDataCount(count);
+        } else {
+            return count;
         }
     }
 
@@ -1588,9 +1647,10 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         private boolean headerFooterFront = false;
         private boolean loadMoreEnabled = false;
         private List<Entry<D>> list = new ArrayList<>();
-        private ArrayMap<Class, Pair<Strategy, MultiType>> bindMap;
+        private ArrayMap<Class, Pair<Strategy, MultiType>> bindMap = null;
+        private ListCountTransformer listCountTransformer = null;
 
-        public Builder() {
+        private Builder() {
         }
 
         /**
@@ -1805,6 +1865,17 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
                 bindMap = new ArrayMap<>();
             }
             bindMap.put(cls, new Pair<Strategy, MultiType>(strategy, null));
+            return this;
+        }
+
+        /**
+         * 设置数据实体集合大小的变化器，注意与{@link FasterAdapter#addHeaderView(View)}、{@link FasterAdapter#addFooterView(View)} 、{@link FasterAdapter#setLoadMoreView(View)}共用会有Holder回收问题
+         *
+         * @param listCountTransformer
+         * @return
+         */
+        public Builder<D> listCountTransformer(@Nullable ListCountTransformer listCountTransformer) {
+            this.listCountTransformer = listCountTransformer;
             return this;
         }
 

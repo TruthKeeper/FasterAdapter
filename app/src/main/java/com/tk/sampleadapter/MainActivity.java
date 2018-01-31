@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 startActivity(new Intent(this, MultiBindActivity.class));
                 break;
             case R.id.btn_4:
+                startActivity(new Intent(this, DynamicCountActivity.class));
                 break;
         }
     }

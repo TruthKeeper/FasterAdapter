@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/btn_insert"
+    android:layout_width="58dp"
+    android:layout_height="58dp"
+    android:layout_marginBottom="8dp"
+    android:layout_marginRight="8dp"
+    android:src="@drawable/icon_insert" />
+

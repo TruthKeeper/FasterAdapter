@@ -67,7 +67,7 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
         recyclerview.setLayoutManager(new LinearLayoutManager(this));
         swipeLayout.setRefreshing(true);
 
-        adapter = new FasterAdapter.Builder<User>()
+        adapter =FasterAdapter.<User>build()
                 .itemClickListener(this)
                 .bind(User.class, new MultiType<User>() {
                     @Override

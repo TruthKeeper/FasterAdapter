@@ -61,7 +61,7 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
         recyclerview.setLayoutManager(new LinearLayoutManager(this));
         swipeLayout.setRefreshing(true);
 
-        adapter = new FasterAdapter.Builder<User>()
+        adapter = FasterAdapter.<User>build()
                 .itemClickListener(this)
                 .emptyView(new EmptyLayout(this))
                 .errorView(new ErrorLayout(this))

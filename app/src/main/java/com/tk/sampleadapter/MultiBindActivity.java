@@ -65,7 +65,7 @@ public class MultiBindActivity extends AppCompatActivity implements FasterAdapte
         recyclerview.setLayoutManager(new LinearLayoutManager(this));
         swipeLayout.setRefreshing(true);
 
-        adapter = new FasterAdapter.Builder<>()
+        adapter = FasterAdapter.build()
                 .bind(String.class, new UserTipStrategy())
                 .bind(User.class, new MultiType<User>() {
                     @Override

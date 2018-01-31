@@ -86,7 +86,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center_vertical"
-            android:text="" />
+            android:text="Adapter变长模式" />
 
         <Button
             android:id="@+id/btn_4"
