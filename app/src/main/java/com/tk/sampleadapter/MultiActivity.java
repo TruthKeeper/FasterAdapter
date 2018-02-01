@@ -13,6 +13,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.tk.fasteradapter.CollectionUtils;
 import com.tk.fasteradapter.Entry;
 import com.tk.fasteradapter.FasterAdapter;
 import com.tk.fasteradapter.MultiType;
@@ -67,7 +68,7 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
         recyclerview.setLayoutManager(new LinearLayoutManager(this));
         swipeLayout.setRefreshing(true);
 
-        adapter =FasterAdapter.<User>build()
+        adapter = FasterAdapter.<User>build()
                 .itemClickListener(this)
                 .bind(User.class, new MultiType<User>() {
                     @Override
@@ -97,9 +98,12 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
         Toast.makeText(this, "点击了列表中第" + listPosition + "项", Toast.LENGTH_SHORT).show();
     }
 
-
     @Override
     public void onRefresh() {
+        initData(false);
+    }
+
+    private void initData(final boolean diff) {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -114,11 +118,14 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
                         list.add(Entry.create(new User("ID：" + i, i, false, true, null)));
                     }
                 }
-                adapter.setData(list);
+                if (diff) {
+                    adapter.setDataByDiff(list);
+                } else {
+                    adapter.setData(list);
+                }
             }
         }, 1_000);
     }
-
 
     @Override
     public void onClick(View v) {
@@ -126,65 +133,82 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
         switch (v.getId()) {
             case R.id.btn_init:
                 swipeLayout.setRefreshing(true);
-                onRefresh();
+                initData(false);
                 break;
             case R.id.btn_clear:
                 adapter.clear();
                 break;
-            case R.id.btn_init_random:
-                //diff
-                List<Entry<User>> list = new ArrayList<Entry<User>>();
-                for (int i = 0; i < 20; i++) {
-                    if (0 == i % 2) {
-                        list.add(Entry.create(new User("ID：" + i, i, false, false, null)));
-                    } else if (0 == i % 3) {
-                        list.add(Entry.create(new User("ID：" + i, i, true, false, "VIP简介：哈哈哈哈")));
-                    } else {
-                        list.add(Entry.create(new User("ID：" + i, i, false, true, null)));
-                    }
-                }
-                adapter.setDataByDiff(list);
+            case R.id.btn_init_diff:
+                swipeLayout.setRefreshing(true);
+                initData(true);
                 break;
-            case R.id.btn_add:
-                addRandom(adapter.getListSize());
+            case R.id.btn_add_head:
+                adapter.add(0, instanceRandom());
                 break;
-            case R.id.btn_remove:
-                if (0 == adapter.getListSize()) {
-                    return;
-                }
-                adapter.remove(adapter.getListSize() - 1);
+            case R.id.btn_add_foot:
+                adapter.add(instanceRandom());
                 break;
             case R.id.btn_add_random:
                 int addIndex = adapter.getListSize() == 0 ? 0 : new Random().nextInt(adapter.getListSize());
-                addRandom(addIndex);
+
+                adapter.add(addIndex, instanceRandom());
+                break;
+            case R.id.btn_add_random_list:
+                int addIndexCollection = adapter.getListSize() == 0 ? 0 : new Random().nextInt(adapter.getListSize());
+
+                List<User> list = new ArrayList<>();
+                list.add(instanceRandom());
+                list.add(instanceRandom());
+                adapter.addAll(addIndexCollection, list, null);
+                break;
+            case R.id.btn_remove_head:
+                adapter.remove(0);
+                break;
+            case R.id.btn_remove_foot:
+                adapter.remove(adapter.getListSize() - 1);
                 break;
             case R.id.btn_remove_random:
-                if (0 == adapter.getListSize()) {
-                    return;
-                }
                 int removeIndex = new Random().nextInt(adapter.getListSize());
+
                 adapter.remove(removeIndex);
+                break;
+            case R.id.btn_remove_if:
+                adapter.removeIf(new CollectionUtils.Predicate<User>() {
+                    @Override
+                    public boolean process(User user) {
+                        return user.getId() % 2 == 0;
+                    }
+                });
                 break;
             case R.id.btn_add_header:
                 adapter.addHeaderView(new HeaderLayout(this));
                 break;
             case R.id.btn_remove_header:
-                int headerSize = adapter.getHeaderViewSize();
+                int headerSize = adapter.getHeaderViewChildCount();
                 if (0 != headerSize) {
                     adapter.removeHeaderView(--headerSize);
                 }
+                break;
+            case R.id.btn_remove_header_all:
+                adapter.removeAllHeaderView();
+                break;
+            case R.id.btn_switch_header:
+                adapter.setHeaderFront(!adapter.isHeaderFront());
                 break;
             case R.id.btn_add_footer:
                 adapter.addFooterView(new FooterLayout(this));
                 break;
             case R.id.btn_remove_footer:
-                int footerSize = adapter.getFooterViewSize();
+                int footerSize = adapter.getFooterViewChildCount();
                 if (0 != footerSize) {
                     adapter.removeFooterView(--footerSize);
                 }
                 break;
-            case R.id.btn_switch:
-                adapter.setHeaderFooterFront(!adapter.isHeaderFooterFront());
+            case R.id.btn_remove_footer_all:
+                adapter.removeAllFooterView();
+                break;
+            case R.id.btn_switch_footer:
+                adapter.setFooterFront(!adapter.isFooterFront());
                 break;
             case R.id.btn_empty_switch:
                 adapter.setEmptyEnabled(!adapter.isEmptyEnabled());
@@ -195,14 +219,14 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
         }
     }
 
-    private void addRandom(int addIndex) {
+    private User instanceRandom() {
         int random = new Random().nextInt(6);
         if (0 == random % 2) {
-            adapter.add(addIndex, Entry.create(new User("新增ID：-1", -1, false, false, null)));
+            return new User("新增ID：-1", -1, false, false, null);
         } else if (0 == random % 3) {
-            adapter.add(addIndex, Entry.create(new User("新增ID：-1", -1, true, false, "VIP简介：哈哈哈哈")));
+            return new User("新增ID：-1", -1, true, false, "VIP简介：哈哈哈哈");
         } else {
-            adapter.add(addIndex, Entry.create(new User("新增ID：-1", -1, false, true, null)));
+            return new User("新增ID：-1", -1, false, true, null);
         }
     }
 
@@ -211,11 +235,11 @@ public class MultiActivity extends AppCompatActivity implements FasterAdapter.On
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (adapter.getListSize() >= 22) {
+                if (adapter.getListSize() >= 25) {
                     adapter.loadMoreEnd();
                 } else if (new Random().nextInt(6) > 1) {
+                    adapter.add(instanceRandom());
                     adapter.loadMoreDismiss();
-                    addRandom(adapter.getListSize());
                 } else {
                     adapter.loadMoreFailure();
                 }

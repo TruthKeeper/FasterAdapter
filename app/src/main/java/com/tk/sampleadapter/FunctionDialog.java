@@ -9,7 +9,6 @@ import android.support.annotation.NonNull;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Button;
 
 /**
  * <pre>
@@ -19,20 +18,6 @@ import android.widget.Button;
  * </pre>
  */
 public class FunctionDialog extends Dialog {
-    private Button btnInit;
-    private Button btnClear;
-    private Button btnInitRandom;
-    private Button btnAdd;
-    private Button btnRemove;
-    private Button btnAddRandom;
-    private Button btnRemoveRandom;
-    private Button btnAddHeader;
-    private Button btnRemoveHeader;
-    private Button btnAddFooter;
-    private Button btnRemoveFooter;
-    private Button btnSwitch;
-    private Button btnEmptySwitch;
-    private Button btnErrorSwitch;
 
     private View.OnClickListener onClickListener;
 
@@ -50,34 +35,28 @@ public class FunctionDialog extends Dialog {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.dialog_function);
         getWindow().getAttributes().width = getContext().getResources().getDisplayMetrics().widthPixels;
-        btnInit = (Button) findViewById(R.id.btn_init);
-        btnClear = (Button) findViewById(R.id.btn_clear);
-        btnInitRandom = (Button) findViewById(R.id.btn_init_random);
-        btnAdd = (Button) findViewById(R.id.btn_add);
-        btnRemove = (Button) findViewById(R.id.btn_remove);
-        btnAddRandom = (Button) findViewById(R.id.btn_add_random);
-        btnRemoveRandom = (Button) findViewById(R.id.btn_remove_random);
-        btnAddHeader = (Button) findViewById(R.id.btn_add_header);
-        btnRemoveHeader = (Button) findViewById(R.id.btn_remove_header);
-        btnAddFooter = (Button) findViewById(R.id.btn_add_footer);
-        btnRemoveFooter = (Button) findViewById(R.id.btn_remove_footer);
-        btnSwitch = (Button) findViewById(R.id.btn_switch);
-        btnEmptySwitch = (Button) findViewById(R.id.btn_empty_switch);
-        btnErrorSwitch = (Button) findViewById(R.id.btn_error_switch);
-        btnInit.setOnClickListener(onClickListener);
-        btnClear.setOnClickListener(onClickListener);
-        btnInitRandom.setOnClickListener(onClickListener);
-        btnAdd.setOnClickListener(onClickListener);
-        btnRemove.setOnClickListener(onClickListener);
-        btnAddRandom.setOnClickListener(onClickListener);
-        btnRemoveRandom.setOnClickListener(onClickListener);
-        btnAddHeader.setOnClickListener(onClickListener);
-        btnRemoveHeader.setOnClickListener(onClickListener);
-        btnAddFooter.setOnClickListener(onClickListener);
-        btnRemoveFooter.setOnClickListener(onClickListener);
-        btnSwitch.setOnClickListener(onClickListener);
-        btnEmptySwitch.setOnClickListener(onClickListener);
-        btnErrorSwitch.setOnClickListener(onClickListener);
+
+        findViewById(R.id.btn_init).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_clear).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_init_diff).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_add_head).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_add_foot).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_add_random).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_add_random_list).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_remove_head).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_remove_foot).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_remove_random).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_remove_if).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_add_header).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_remove_header).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_remove_header_all).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_switch_header).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_add_footer).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_remove_footer).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_remove_footer_all).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_switch_footer).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_empty_switch).setOnClickListener(onClickListener);
+        findViewById(R.id.btn_error_switch).setOnClickListener(onClickListener);
     }
 
     public void setOnClickListener(View.OnClickListener onClickListener) {

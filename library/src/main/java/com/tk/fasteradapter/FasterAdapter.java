@@ -46,23 +46,22 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
  *          <li>封装常用的集合 API</li>
  *          <li>封装常用的ViewHolder API</li>
  *          <li>类似选中业务场景下，封装SparseArray记录对FasterHolder的数据保存</li>
- *          <li>final不允许继承FasterAdapter，支持Adapter变长模式{@link FasterAdapter.Builder#listCountTransformer(ListCountTransformer)}</li>
+ *          <li>不允许继承、重写FasterAdapter , 变长模式请重新继承{@link RecyclerView.Adapter}</li>
  *          </ul>
  * </pre>
  */
 
 public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
-    private static final String TAG = "FasterAdapter";
+    public static final String TAG = FasterAdapter.class.getSimpleName();
     /**
-     * 开发时注意不要占用
+     * 内部条目类型 , 开发时注意不要占用
      */
     public static final int TYPE_EMPTY = -10000;
     public static final int TYPE_ERROR = -10001;
     public static final int TYPE_HEADER = -10002;
     public static final int TYPE_FOOTER = -10003;
     public static final int TYPE_LOAD = -10004;
-    public static final int TYPE_VOID_DATA = -10005;
-    public static final int[] INNER_TYPE = new int[]{TYPE_EMPTY, TYPE_ERROR, TYPE_HEADER, TYPE_FOOTER, TYPE_LOAD, TYPE_VOID_DATA};
+    public static final int[] INNER_TYPE = new int[]{TYPE_EMPTY, TYPE_ERROR, TYPE_HEADER, TYPE_FOOTER, TYPE_LOAD};
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({Status.LOAD_IDLE, Status.LOAD_ERROR, Status.LOAD_END, Status.LOAD_ING})
@@ -104,28 +103,35 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      */
     private ILoadMore mILoadMore = null;
     /**
-     * 空视图的包裹容器高度是否是{@link ViewGroup.LayoutParams#MATCH_PARENT},充满RecyclerView
+     * 空视图的包裹容器高度是否是{@link ViewGroup.LayoutParams#MATCH_PARENT} , 充满RecyclerView
      * <br>
-     * 一般不用对其设置，只有在有头、足视图时需要注意
+     * default false，一般不用对其设置，只有在有头、足视图时需要注意
      */
-    private boolean isEmptyMatchParent;
+    private boolean isEmptyMatchParent = false;
     /**
-     * 错误视图的包裹容器高度是否是{@link ViewGroup.LayoutParams#MATCH_PARENT},充满RecyclerView
+     * 错误视图的包裹容器高度是否是{@link ViewGroup.LayoutParams#MATCH_PARENT} , 充满RecyclerView
      * <br>
-     * 一般不用对其设置，只有在有头、足视图时需要注意
+     * default false，一般不用对其设置，只有在有头、足视图时需要注意
      */
-    private boolean isErrorMatchParent;
+    private boolean isErrorMatchParent = false;
     /**
-     * 是否启用空视图
+     * 是否启用空视图 default true
      */
-    private boolean isEmptyEnabled;
+    private boolean isEmptyEnabled = true;
     /**
-     * 头、足视图优先级是否大于占位图（空视图、错误视图）,true && 无数据时既显示头、足又显示空视图
+     * 头视图优先级是否大于占位图（空视图、错误视图） default false
+     * <br>
+     * true : 无数据或错误时显示头视图
      */
-    private boolean headerFooterFront;
-
+    private boolean headerFront = false;
     /**
-     * 是否启用上拉加载
+     * 足视图优先级是否大于占位图（空视图、错误视图） default false
+     * <br>
+     * true : 无数据或错误时显示足视图
+     */
+    private boolean footerFront = false;
+    /**
+     * 是否启用上拉加载 default false
      */
     private boolean isLoadMoreEnabled = false;
     /**
@@ -198,10 +204,6 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * 布局管理器
      */
     private RecyclerView.LayoutManager mLayoutManager;
-    /**
-     * List集合数据大小变化器
-     */
-    private final ListCountTransformer mListCountTransformer;
 
     private FasterAdapter(Builder<T> builder) {
         mOnItemClickListener = builder.itemClickListener;
@@ -250,7 +252,8 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         }
 
         isEmptyEnabled = builder.emptyEnabled;
-        headerFooterFront = builder.headerFooterFront;
+        headerFront = builder.headerFront;
+        footerFront = builder.footerFront;
         isLoadMoreEnabled = builder.loadMoreEnabled;
         if (null == builder.list) {
             mList = new ArrayList<>();
@@ -259,7 +262,6 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         }
         mBindMap = builder.bindMap;
         array = new LongSparseArray<>(2);
-        mListCountTransformer = builder.listCountTransformer;
     }
 
     public static <D> FasterAdapter.Builder<D> build() {
@@ -400,28 +402,41 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     }
 
     /**
-     * 设置占位视图优先级
+     * 设置头视图优先级是否大于占位图（空视图、错误视图）
      *
-     * @param headerFooterFront
+     * @param headerFront
      */
-    public void setHeaderFooterFront(boolean headerFooterFront) {
-        if (this.headerFooterFront != headerFooterFront) {
-            this.headerFooterFront = headerFooterFront;
-            if (1 == Math.max(getHeaderSpace(), getFooterSpace())
-                    && 1 == Math.max(getEmptySpace(), getErrorSpace())) {
-                //刷新
+    public void setHeaderFront(boolean headerFront) {
+        if (this.headerFront != headerFront) {
+            this.headerFront = headerFront;
+            if (1 == getHeaderSpace() && 1 == Math.max(getEmptySpace(), getErrorSpace())) {
+                //立即刷新
                 notifyDataSetChanged();
             }
         }
     }
 
     /**
-     * 获取占位视图的优先级
+     * 设置足视图优先级是否大于占位图（空视图、错误视图）
      *
-     * @return
+     * @param footerFront
      */
-    public boolean isHeaderFooterFront() {
-        return headerFooterFront;
+    public void setFooterFront(boolean footerFront) {
+        if (this.footerFront != footerFront) {
+            this.footerFront = footerFront;
+            if (1 == getFooterSpace() && 1 == Math.max(getEmptySpace(), getErrorSpace())) {
+                //立即刷新
+                notifyDataSetChanged();
+            }
+        }
+    }
+
+    public boolean isHeaderFront() {
+        return headerFront;
+    }
+
+    public boolean isFooterFront() {
+        return footerFront;
     }
 
     /**
@@ -440,9 +455,9 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param headerView
      */
     public void addHeaderView(int index, @NonNull View headerView) {
-        boolean init = 0 == getHeaderSpace();
-        boolean emptyShow = 1 == getEmptySpace();
-        boolean errorShow = 1 == getErrorSpace();
+        final boolean init = 0 == getHeaderSpace();
+        final boolean emptyShow = 1 == getEmptySpace();
+        final boolean errorShow = 1 == getErrorSpace();
         if (null == mHeaderContainer) {
             mHeaderContainer = new LinearLayout(headerView.getContext());
             mHeaderContainer.setOrientation(LinearLayout.VERTICAL);
@@ -451,7 +466,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         putViewInGroup(mHeaderContainer, headerView, index);
         if (init) {
             if (emptyShow || errorShow) {
-                if (headerFooterFront) {
+                if (headerFront) {
                     notifyItemInserted(0);
                 } else {
                     //避免占位视图ItemAnimator
@@ -484,12 +499,12 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         if (0 > index || 0 == getHeaderSpace()) {
             return;
         }
-        boolean emptyShow = 1 == getEmptySpace();
-        boolean errorShow = 1 == getErrorSpace();
+        final boolean emptyShow = 1 == getEmptySpace();
+        final boolean errorShow = 1 == getErrorSpace();
         mHeaderContainer.removeViewAt(index);
         if (0 == mHeaderContainer.getChildCount()) {
             if (emptyShow || errorShow) {
-                if (headerFooterFront) {
+                if (headerFront) {
                     notifyItemRemoved(0);
                 }
             } else {
@@ -505,11 +520,11 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         if (0 == getHeaderSpace()) {
             return;
         }
-        boolean emptyShow = 1 == getEmptySpace();
-        boolean errorShow = 1 == getErrorSpace();
+        final boolean emptyShow = 1 == getEmptySpace();
+        final boolean errorShow = 1 == getErrorSpace();
         mHeaderContainer.removeAllViews();
         if (emptyShow || errorShow) {
-            if (headerFooterFront) {
+            if (headerFront) {
                 notifyItemRemoved(0);
             }
         } else {
@@ -518,15 +533,12 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     }
 
     /**
-     * 获取头视图数量
+     * 获取头视图子View数量
      *
      * @return
      */
-    public int getHeaderViewSize() {
-        if (1 == getHeaderSpace()) {
-            return mHeaderContainer.getChildCount();
-        }
-        return 0;
+    public int getHeaderViewChildCount() {
+        return mHeaderContainer == null ? 0 : mHeaderContainer.getChildCount();
     }
 
     /**
@@ -545,9 +557,9 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param footerView
      */
     public void addFooterView(int index, @NonNull View footerView) {
-        boolean init = 0 == getFooterSpace();
-        boolean emptyShow = 1 == getEmptySpace();
-        boolean errorShow = 1 == getErrorSpace();
+        final boolean init = 0 == getFooterSpace();
+        final boolean emptyShow = 1 == getEmptySpace();
+        final boolean errorShow = 1 == getErrorSpace();
         if (null == mFooterContainer) {
             mFooterContainer = new LinearLayout(footerView.getContext());
             mFooterContainer.setOrientation(LinearLayout.VERTICAL);
@@ -556,7 +568,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         putViewInGroup(mFooterContainer, footerView, index);
         if (init) {
             if (emptyShow || errorShow) {
-                if (headerFooterFront) {
+                if (footerFront) {
                     notifyItemInserted(getHeaderSpace() + 1);
                 }
             } else {
@@ -586,12 +598,12 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         if (0 > index || 0 == getFooterSpace()) {
             return;
         }
-        boolean emptyShow = 1 == getEmptySpace();
-        boolean errorShow = 1 == getErrorSpace();
+        final boolean emptyShow = 1 == getEmptySpace();
+        final boolean errorShow = 1 == getErrorSpace();
         mFooterContainer.removeViewAt(index);
         if (0 == mFooterContainer.getChildCount()) {
             if (emptyShow || errorShow) {
-                if (headerFooterFront) {
+                if (footerFront) {
                     notifyItemRemoved(getHeaderSpace() + 1);
                 }
             } else {
@@ -603,15 +615,15 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     /**
      * 移除所有足视图
      */
-    public void removeFooterView() {
+    public void removeAllFooterView() {
         if (0 == getFooterSpace()) {
             return;
         }
-        boolean emptyShow = 1 == getEmptySpace();
-        boolean errorShow = 1 == getErrorSpace();
+        final boolean emptyShow = 1 == getEmptySpace();
+        final boolean errorShow = 1 == getErrorSpace();
         mFooterContainer.removeAllViews();
         if (emptyShow || errorShow) {
-            if (headerFooterFront) {
+            if (footerFront) {
                 notifyItemRemoved(0);
             }
         } else {
@@ -620,15 +632,12 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     }
 
     /**
-     * 获取足视图数量
+     * 获取足视图子View数量
      *
      * @return
      */
-    public int getFooterViewSize() {
-        if (1 == getFooterSpace()) {
-            return mFooterContainer.getChildCount();
-        }
-        return 0;
+    public int getFooterViewChildCount() {
+        return mFooterContainer == null ? 0 : mFooterContainer.getChildCount();
     }
 
     /**
@@ -794,69 +803,34 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
                 return createHolder(this, mFooterContainer);
             case TYPE_LOAD:
                 return createHolder(this, mLoadMoreContainer);
-            case TYPE_VOID_DATA:
-                if (mListCountTransformer == null) {
-                    throw new NullPointerException("position >  mList.size() - 1!");
-                }
-                final Strategy<Void> voidStrategy = mListCountTransformer.newVoidDataStrategy();
-                if (voidStrategy == null) {
-                    throw new NullPointerException("ListCountTransformer newVoidDataStrategy return null !");
-                }
-                final FasterHolder voidStrategyHolder = voidStrategy.createHolder(parent);
-                //依附Adapter
-                voidStrategyHolder.attach(this);
-                //设置监听
-                if (null != mOnItemClickListener) {
-                    voidStrategyHolder.itemView.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            mOnItemClickListener.onItemClick(FasterAdapter.this, v, voidStrategyHolder.getAdapterPosition() - getHeaderSpace());
-                        }
-                    });
-                }
-                if (null != mOnItemLongClickListener) {
-                    voidStrategyHolder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
-                        @Override
-                        public boolean onLongClick(View v) {
-                            mOnItemLongClickListener.onItemLongClick(FasterAdapter.this, v, voidStrategyHolder.getAdapterPosition() - getHeaderSpace());
-                            return false;
-                        }
-                    });
-                }
-                voidStrategyHolder.onCreate();
-                return voidStrategyHolder;
             default:
                 for (final Entry<T> entry : mList) {
-                    if (null != entry.getStrategy()) {
-                        //在getItemViewType方法中必须注入Strategy
-                        if (entry.getStrategy().getItemViewType() == viewType) {
-                            //创建FasterHolder
-                            final FasterHolder holder = entry.getStrategy().createHolder(parent);
-                            //依附Adapter
-                            holder.attach(this);
-                            //设置监听
-                            if (null != mOnItemClickListener) {
-                                holder.itemView.setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        mOnItemClickListener.onItemClick(FasterAdapter.this, v, holder.getAdapterPosition() - getHeaderSpace());
-                                    }
-                                });
-                            }
-                            if (null != mOnItemLongClickListener) {
-                                holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
-                                    @Override
-                                    public boolean onLongClick(View v) {
-                                        mOnItemLongClickListener.onItemLongClick(FasterAdapter.this, v, holder.getAdapterPosition() - getHeaderSpace());
-                                        return false;
-                                    }
-                                });
-                            }
-                            holder.onCreate();
-                            return holder;
+                    generateStrategy(entry);
+                    if (entry.getStrategy().getItemViewType() == viewType) {
+                        //创建FasterHolder
+                        final FasterHolder holder = entry.getStrategy().createHolder(parent);
+                        //依附Adapter
+                        holder.attach(this);
+                        //设置监听
+                        if (null != mOnItemClickListener) {
+                            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    mOnItemClickListener.onItemClick(FasterAdapter.this, v, holder.getAdapterPosition() - getHeaderSpace());
+                                }
+                            });
                         }
-                    } else {
-                        throw new NullPointerException("Entry has not strategy !");
+                        if (null != mOnItemLongClickListener) {
+                            holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                                @Override
+                                public boolean onLongClick(View v) {
+                                    mOnItemLongClickListener.onItemLongClick(FasterAdapter.this, v, holder.getAdapterPosition() - getHeaderSpace());
+                                    return false;
+                                }
+                            });
+                        }
+                        holder.onCreate();
+                        return holder;
                     }
                 }
                 throw new NullPointerException("no FasterHolder found !");
@@ -890,11 +864,6 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
                 break;
             case TYPE_LOAD:
                 break;
-            case TYPE_VOID_DATA:
-                //onCreateViewHolder已经校验过了
-                final Strategy<Void> voidStrategy = mListCountTransformer.newVoidDataStrategy();
-                voidStrategy.onBindViewHolder(holder, null, payloads);
-                break;
             default:
                 final int listPosition = position - getHeaderSpace();
                 Strategy<T> strategy = mList.get(listPosition).getStrategy();
@@ -913,52 +882,58 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
 
     @Override
     public int getItemViewType(int position) {
-        boolean hasEmpty = 1 == getEmptySpace();
-        boolean hasError = 1 == getErrorSpace();
-        boolean hasHeader = 1 == getHeaderSpace();
-        if (headerFooterFront) {
-            if (hasError) {
-                switch (position) {
-                    case 0:
-                        return hasHeader ? TYPE_HEADER : TYPE_ERROR;
-                    case 1:
-                        return hasHeader ? TYPE_ERROR : TYPE_FOOTER;
-                    case 2:
-                        return TYPE_FOOTER;
-                    default:
-                        //理论不出现
-                        return TYPE_ERROR;
-                }
-            }
-            if (hasEmpty) {
-                switch (position) {
-                    case 0:
-                        return hasHeader ? TYPE_HEADER : TYPE_EMPTY;
-                    case 1:
-                        return hasHeader ? TYPE_EMPTY : TYPE_FOOTER;
-                    case 2:
-                        return TYPE_FOOTER;
-                    default:
-                        //理论不出现
+        final boolean hasEmpty = 1 == getEmptySpace();
+        final boolean hasError = 1 == getErrorSpace();
+        final boolean hasHeader = 1 == getHeaderSpace();
+        final boolean hasFooter = 1 == getFooterSpace();
+        if (hasEmpty) {
+            //显示空白占位视图时
+            switch (position) {
+                case 0:
+                    if (hasHeader && headerFront) {
+                        return TYPE_HEADER;
+                    } else {
                         return TYPE_EMPTY;
-                }
+                    }
+                case 1:
+                    if (hasHeader && headerFront) {
+                        return TYPE_EMPTY;
+                    } else if (hasFooter && footerFront) {
+                        return TYPE_FOOTER;
+                    }
+                case 2:
+                    if (hasFooter && footerFront) {
+                        return TYPE_FOOTER;
+                    }
             }
-            return getRealItemViewType(position);
+        } else if (hasError) {
+            //显示错误占位视图时
+            switch (position) {
+                case 0:
+                    if (hasHeader && headerFront) {
+                        return TYPE_HEADER;
+                    } else {
+                        return TYPE_ERROR;
+                    }
+                case 1:
+                    if (hasHeader && headerFront) {
+                        return TYPE_ERROR;
+                    } else if (hasFooter && footerFront) {
+                        return TYPE_FOOTER;
+                    }
+                case 2:
+                    if (hasFooter && footerFront) {
+                        return TYPE_FOOTER;
+                    }
+            }
         } else {
-            if (hasError) {
-                //错误视图
-                return TYPE_ERROR;
-            }
-            if (hasEmpty) {
-                //空视图
-                return TYPE_EMPTY;
-            }
             return getRealItemViewType(position);
         }
+        throw new IllegalStateException("getItemViewType error Position = " + position);
     }
 
     /**
-     * 排除headerFooterFront后的获取Type逻辑
+     * 排除空视图、占位视图后的获取Type逻辑
      *
      * @param position
      * @return
@@ -969,7 +944,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
             return TYPE_HEADER;
         }
         //足视图位置
-        int footerPosition = 1 == getFooterSpace() ? getHeaderSpace() + getValidListCount() : -1;
+        int footerPosition = 1 == getFooterSpace() ? getHeaderSpace() + mList.size() : -1;
         if (-1 != footerPosition) {
             //存在足视图
             if (position < footerPosition) {
@@ -1001,14 +976,16 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @return
      */
     private int getItemViewTypeFromList(int position) {
-        int listPosition = position - getHeaderSpace();
-        if (listPosition > mList.size() - 1) {
-            //超过限制，即mListCountTransformer#newListDataCount返回了更大的数值
-            return TYPE_VOID_DATA;
-        }
-        Entry<T> entry = mList.get(listPosition);
-        //方法会先于onCreateViewHolder调用
-        if (entry.getStrategy() == null && mBindMap != null) {
+        Entry<T> entry = mList.get(position - getHeaderSpace());
+        generateStrategy(entry);
+        return entry.getStrategy().getItemViewType();
+    }
+
+    private void generateStrategy(Entry<T> entry) {
+        if (entry.getStrategy() == null) {
+            if (mBindMap == null) {
+                throw new NullPointerException("FasterAdapter Builder no bind !");
+            }
             Pair<Strategy, MultiType> multiTypePair = mBindMap.get(entry.getData().getClass());
             if (multiTypePair == null) {
                 throw new NullPointerException("FasterAdapter Builder no bind !");
@@ -1024,37 +1001,24 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
                 }
             }
         }
-        return entry.getStrategy().getItemViewType();
-
     }
 
     @Override
     public int getItemCount() {
-        if (headerFooterFront) {
-            //头、足、占位视图可以同时显示
-            if (1 == Math.max(getErrorSpace(), getEmptySpace())) {
-                //占位视图(最多显示一个)+头+足
-                return getHeaderSpace() + 1 + getFooterSpace();
+        int count;
+        if (Math.max(getEmptySpace(), getErrorSpace()) == 1) {
+            //显示占位视图时
+            count = 1;
+            if (headerFront && getHeaderSpace() == 1) {
+                count++;
             }
-            //头+体+足+加载视图
-            return getHeaderSpace() + getValidListCount() + getFooterSpace() + getLoadMoreSpace();
-        } else {
-            if (1 == Math.max(getErrorSpace(), getEmptySpace())) {
-                //占位视图
-                return 1;
+            if (footerFront && getFooterSpace() == 1) {
+                count++;
             }
-            //头+体+足+加载视图
-            return getHeaderSpace() + getValidListCount() + getFooterSpace() + getLoadMoreSpace();
-        }
-    }
-
-    private int getValidListCount() {
-        int count = mList.size();
-        if (mListCountTransformer != null) {
-            return mListCountTransformer.newListDataCount(count);
         } else {
-            return count;
+            count = getHeaderSpace() + mList.size() + getFooterSpace() + getLoadMoreSpace();
         }
+        return count;
     }
 
     /**
@@ -1125,6 +1089,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param strategy
      */
     public void setData(@Nullable List<T> list, @Nullable Strategy<T> strategy) {
+        loadMoreDismiss();
         if (null == list) {
             clear(false);
         } else {
@@ -1139,6 +1104,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param list
      */
     public void setData(@Nullable List<Entry<T>> list) {
+        loadMoreDismiss();
         if (null == list) {
             clear(false);
         } else {
@@ -1154,6 +1120,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param strategy
      */
     public void setDataByDiff(@Nullable final List<T> list, @Nullable Strategy<T> strategy) {
+        loadMoreDismiss();
         if (null == list) {
             clear(false);
         } else {
@@ -1167,6 +1134,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param list
      */
     public void setDataByDiff(@Nullable final List<Entry<T>> list) {
+        loadMoreDismiss();
         if (null == list) {
             clear(false);
         } else {
@@ -1369,6 +1337,17 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param index
      * @param list
      * @param strategy
+     */
+    public void addAll(int index, @Nullable List<T> list, @Nullable Strategy<T> strategy) {
+        addAll(index, convertList(list, strategy), false);
+    }
+
+    /**
+     * 添加数据集
+     *
+     * @param index
+     * @param list
+     * @param strategy
      * @param immediately
      */
     public void addAll(int index, @Nullable List<T> list, @Nullable Strategy<T> strategy, boolean immediately) {
@@ -1538,6 +1517,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param immediately
      */
     public void clear(boolean immediately) {
+        loadMoreDismiss();
         if (immediately) {
             mList.clear();
             notifyDataSetChanged();
@@ -1641,14 +1621,14 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         private View loadMoreView = null;
         private List<View> headerViews = null;
         private List<View> footerViews = null;
-        private boolean emptyMatchParent = true;
-        private boolean errorMatchParent = true;
+        private boolean emptyMatchParent = false;
+        private boolean errorMatchParent = false;
         private boolean emptyEnabled = true;
-        private boolean headerFooterFront = false;
+        private boolean headerFront = false;
+        private boolean footerFront = false;
         private boolean loadMoreEnabled = false;
         private List<Entry<D>> list = new ArrayList<>();
         private ArrayMap<Class, Pair<Strategy, MultiType>> bindMap = null;
-        private ListCountTransformer listCountTransformer = null;
 
         private Builder() {
         }
@@ -1788,13 +1768,24 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         }
 
         /**
-         * 头、足视图优先级是否大于占位视图，即在无数据或者错误视图时是否显示头、足视图
+         * 头视图优先级是否大于占位图（空视图、错误视图）
          *
-         * @param headerFooterFront default false
+         * @param headerFront default false , true : 无数据或错误时显示头视图
          * @return
          */
-        public Builder<D> headerFooterFront(boolean headerFooterFront) {
-            this.headerFooterFront = headerFooterFront;
+        public Builder<D> headerFront(boolean headerFront) {
+            this.headerFront = headerFront;
+            return this;
+        }
+
+        /**
+         * 足视图优先级是否大于占位图（空视图、错误视图）
+         *
+         * @param footerFront default false , true : 无数据或错误时显示足视图
+         * @return
+         */
+        public Builder<D> footerFront(boolean footerFront) {
+            this.footerFront = footerFront;
             return this;
         }
 
@@ -1865,17 +1856,6 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
                 bindMap = new ArrayMap<>();
             }
             bindMap.put(cls, new Pair<Strategy, MultiType>(strategy, null));
-            return this;
-        }
-
-        /**
-         * 设置数据实体集合大小的变化器，注意与{@link FasterAdapter#addHeaderView(View)}、{@link FasterAdapter#addFooterView(View)} 、{@link FasterAdapter#setLoadMoreView(View)}共用会有Holder回收问题
-         *
-         * @param listCountTransformer
-         * @return
-         */
-        public Builder<D> listCountTransformer(@Nullable ListCountTransformer listCountTransformer) {
-            this.listCountTransformer = listCountTransformer;
             return this;
         }
 

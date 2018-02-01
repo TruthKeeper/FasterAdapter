@@ -13,6 +13,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.tk.fasteradapter.CollectionUtils;
 import com.tk.fasteradapter.Entry;
 import com.tk.fasteradapter.FasterAdapter;
 import com.tk.sampleadapter.layout.EmptyLayout;
@@ -82,6 +83,10 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
 
     @Override
     public void onRefresh() {
+        initData(false);
+    }
+
+    private void initData(final boolean diff) {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -90,11 +95,14 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
                 for (int i = 0; i < 20; i++) {
                     list.add(new User("ID：" + i, i, false, false, null));
                 }
-                adapter.setData(list, strategy);
+                if (diff) {
+                    adapter.setDataByDiff(list, strategy);
+                } else {
+                    adapter.setData(list, strategy);
+                }
             }
         }, 1_000);
     }
-
 
     @Override
     public void onClick(View v) {
@@ -102,60 +110,82 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
         switch (v.getId()) {
             case R.id.btn_init:
                 swipeLayout.setRefreshing(true);
-                onRefresh();
+                initData(false);
                 break;
             case R.id.btn_clear:
                 adapter.clear();
                 break;
-            case R.id.btn_init_random:
-                //diff
-                List<User> list = new ArrayList<>();
-                for (int i = 0; i < 20; i++) {
-                    list.add(new User("ID：" + i, i, false, false, null));
-                }
-                adapter.setDataByDiff(list, strategy);
+            case R.id.btn_init_diff:
+                swipeLayout.setRefreshing(true);
+                initData(true);
                 break;
-            case R.id.btn_add:
+            case R.id.btn_add_head:
+                adapter.add(0, Entry.create(new User("新增ID：-1", -1, false, false, null), strategy));
+                break;
+            case R.id.btn_add_foot:
                 adapter.add(Entry.create(new User("新增ID：-1", -1, false, false, null), strategy));
-                break;
-            case R.id.btn_remove:
-                if (0 == adapter.getListSize()) {
-                    return;
-                }
-                adapter.remove(adapter.getListSize() - 1);
                 break;
             case R.id.btn_add_random:
                 int addIndex = adapter.getListSize() == 0 ? 0 : new Random().nextInt(adapter.getListSize());
 
                 adapter.add(addIndex, Entry.create(new User("新增ID：-1", -1, false, false, null), strategy));
                 break;
+            case R.id.btn_add_random_list:
+                int addIndexCollection = adapter.getListSize() == 0 ? 0 : new Random().nextInt(adapter.getListSize());
+
+                List<Entry<User>> list = new ArrayList<>();
+                list.add(Entry.create(new User("新增组ID：-1", -2, false, false, null), strategy));
+                list.add(Entry.create(new User("新增组ID：-1", -3, false, false, null), strategy));
+                adapter.addAll(addIndexCollection, list);
+                break;
+            case R.id.btn_remove_head:
+                adapter.remove(0);
+                break;
+            case R.id.btn_remove_foot:
+                adapter.remove(adapter.getListSize() - 1);
+                break;
             case R.id.btn_remove_random:
-                if (0 == adapter.getListSize()) {
-                    return;
-                }
                 int removeIndex = new Random().nextInt(adapter.getListSize());
+
                 adapter.remove(removeIndex);
+                break;
+            case R.id.btn_remove_if:
+                adapter.removeIf(new CollectionUtils.Predicate<User>() {
+                    @Override
+                    public boolean process(User user) {
+                        return user.getId() % 2 == 0;
+                    }
+                });
                 break;
             case R.id.btn_add_header:
                 adapter.addHeaderView(new HeaderLayout(this));
                 break;
             case R.id.btn_remove_header:
-                int headerSize = adapter.getHeaderViewSize();
+                int headerSize = adapter.getHeaderViewChildCount();
                 if (0 != headerSize) {
                     adapter.removeHeaderView(--headerSize);
                 }
+                break;
+            case R.id.btn_remove_header_all:
+                adapter.removeAllHeaderView();
+                break;
+            case R.id.btn_switch_header:
+                adapter.setHeaderFront(!adapter.isHeaderFront());
                 break;
             case R.id.btn_add_footer:
                 adapter.addFooterView(new FooterLayout(this));
                 break;
             case R.id.btn_remove_footer:
-                int footerSize = adapter.getFooterViewSize();
+                int footerSize = adapter.getFooterViewChildCount();
                 if (0 != footerSize) {
                     adapter.removeFooterView(--footerSize);
                 }
                 break;
-            case R.id.btn_switch:
-                adapter.setHeaderFooterFront(!adapter.isHeaderFooterFront());
+            case R.id.btn_remove_footer_all:
+                adapter.removeAllFooterView();
+                break;
+            case R.id.btn_switch_footer:
+                adapter.setFooterFront(!adapter.isFooterFront());
                 break;
             case R.id.btn_empty_switch:
                 adapter.setEmptyEnabled(!adapter.isEmptyEnabled());
@@ -163,6 +193,7 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
             case R.id.btn_error_switch:
                 adapter.setDisplayError(!adapter.isDisplayError());
                 break;
+
         }
     }
 
@@ -171,11 +202,11 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (adapter.getListSize() >= 22) {
+                if (adapter.getListSize() >= 25) {
                     adapter.loadMoreEnd();
                 } else if (new Random().nextInt(6) > 1) {
-                    adapter.loadMoreDismiss();
                     adapter.add(Entry.create(new User("新增ID：-1", -1, false, false, null), strategy));
+                    adapter.loadMoreDismiss();
                 } else {
                     adapter.loadMoreFailure();
                 }
