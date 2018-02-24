@@ -39,7 +39,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
     /**
      * 存放view对象
      */
-    private SparseArray<View> mViews = null;
+    private final SparseArray<View> mViews;
     /**
      * 放置额外的对象标记
      */
