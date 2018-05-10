@@ -1134,7 +1134,16 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param list
      */
     public void setDataByDiff(@Nullable final List<Entry<T>> list) {
-        loadMoreDismiss();
+        setDataByDiff(list, false);
+    }
+
+    /**
+     * 设置数据源
+     *
+     * @param list
+     * @param payload
+     */
+    public void setDataByDiff(@Nullable final List<Entry<T>> list, final boolean payload) {
         if (null == list) {
             clear(false);
         } else {
@@ -1165,14 +1174,20 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
                     return mList.get(oldItemPosition).getData().equals(list.get(newItemPosition).getData());
                 }
 
+                @Nullable
+                @Override
+                public Object getChangePayload(int oldItemPosition, int newItemPosition) {
+                    return payload ? new Object() : null;
+                }
+
                 @Override
                 public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
                     return false;
                 }
-
             }, true);
             mList = list;
             result.dispatchUpdatesTo(new ListUpdateCallback() {
+
                 @Override
                 public void onInserted(int position, int count) {
                     notifyItemRangeInserted(position + getHeaderSpace(), count);
