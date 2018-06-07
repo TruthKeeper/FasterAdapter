@@ -26,10 +26,10 @@ public class UserStarStrategy extends Strategy<User> {
     }
 
     @Override
-    protected FasterHolder createHolder(ViewGroup parent) {
+    protected FasterHolder onCreateHolder(ViewGroup parent) {
         return new FasterHolder(LayoutInflater.from(parent.getContext()).inflate(layoutId(), parent, false)) {
             @Override
-            protected void onCreate() {
+            protected void onCreate(View itemView) {
                 final FasterHolder holder = this;
                 setOnClickListener(R.id.btn_star, new View.OnClickListener() {
                     @Override

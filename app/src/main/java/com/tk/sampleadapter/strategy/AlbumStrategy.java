@@ -32,10 +32,10 @@ public class AlbumStrategy extends Strategy<Integer> {
     }
 
     @Override
-    protected FasterHolder createHolder(ViewGroup parent) {
+    protected FasterHolder onCreateHolder(ViewGroup parent) {
         return new FasterHolder(LayoutInflater.from(parent.getContext()).inflate(layoutId(), parent, false)) {
             @Override
-            protected void onCreate() {
+            protected void onCreate(View itemView) {
                 setOnLongClickListener(R.id.content, new View.OnLongClickListener() {
                     @Override
                     public boolean onLongClick(View v) {

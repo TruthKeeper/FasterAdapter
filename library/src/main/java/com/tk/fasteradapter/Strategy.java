@@ -1,6 +1,7 @@
 package com.tk.fasteradapter;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.List;
@@ -24,7 +25,7 @@ public abstract class Strategy<T> {
     /**
      * 需要扩展
      * <ul>
-     * <li>{@link FasterHolder#onCreate()}</li>
+     * <li>{@link FasterHolder#onCreate(View)}}</li>
      * <li>{@link FasterHolder#onDetach()}</li>
      * <li>{@link FasterHolder#onRecycle()}</li>
      * </ul>时重写
@@ -32,7 +33,7 @@ public abstract class Strategy<T> {
      * @param parent
      * @return
      */
-    protected FasterHolder createHolder(ViewGroup parent) {
+    protected FasterHolder onCreateHolder(ViewGroup parent) {
         return new FasterHolder(LayoutInflater.from(parent.getContext()).inflate(layoutId(), parent, false));
     }
 

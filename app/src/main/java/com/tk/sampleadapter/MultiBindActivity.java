@@ -116,9 +116,9 @@ public class MultiBindActivity extends AppCompatActivity implements FasterAdapte
                     }
                 }
                 if (diff) {
-                    adapter.setDataByDiff(list, null);
+                    adapter.setSourceDataByDiff(list);
                 } else {
-                    adapter.setData(list, null);
+                    adapter.setSourceData(list);
                 }
             }
         }, 1_000);
@@ -140,15 +140,15 @@ public class MultiBindActivity extends AppCompatActivity implements FasterAdapte
                 initData(true);
                 break;
             case R.id.btn_add_head:
-                adapter.add(0, instanceRandom());
+                adapter.addSource(0, instanceRandom());
                 break;
             case R.id.btn_add_foot:
-                adapter.add(instanceRandom());
+                adapter.addSource(instanceRandom());
                 break;
             case R.id.btn_add_random:
                 int addIndex = adapter.getListSize() == 0 ? 0 : new Random().nextInt(adapter.getListSize());
 
-                adapter.add(addIndex, instanceRandom());
+                adapter.addSource(addIndex, instanceRandom());
                 break;
             case R.id.btn_add_random_list:
                 int addIndexCollection = adapter.getListSize() == 0 ? 0 : new Random().nextInt(adapter.getListSize());
@@ -156,7 +156,7 @@ public class MultiBindActivity extends AppCompatActivity implements FasterAdapte
                 List<Object> list = new ArrayList<>();
                 list.add(instanceRandom());
                 list.add(instanceRandom());
-                adapter.addAll(addIndexCollection, list, null);
+                adapter.addAllSource(addIndexCollection, list);
                 break;
             case R.id.btn_remove_head:
                 adapter.remove(0);
@@ -235,7 +235,7 @@ public class MultiBindActivity extends AppCompatActivity implements FasterAdapte
                 if (adapter.getListSize() >= 25) {
                     adapter.loadMoreEnd();
                 } else if (new Random().nextInt(6) > 1) {
-                    adapter.add(instanceRandom());
+                    adapter.addSource(instanceRandom());
                     adapter.loadMoreDismiss();
                 } else {
                     adapter.loadMoreFailure();

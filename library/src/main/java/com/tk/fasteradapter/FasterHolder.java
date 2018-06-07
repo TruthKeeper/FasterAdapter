@@ -374,7 +374,7 @@ public class FasterHolder extends RecyclerView.ViewHolder {
     /**
      * FasterHolder创建，可以扩展用于监听点击事件等等
      */
-    protected void onCreate() {
+    protected void onCreate(View itemView) {
     }
 
     /**

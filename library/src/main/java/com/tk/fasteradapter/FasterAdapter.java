@@ -808,7 +808,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
                     generateStrategy(entry);
                     if (entry.getStrategy().getItemViewType() == viewType) {
                         //创建FasterHolder
-                        final FasterHolder holder = entry.getStrategy().createHolder(parent);
+                        final FasterHolder holder = entry.getStrategy().onCreateHolder(parent);
                         //依附Adapter
                         holder.attach(this);
                         //设置监听
@@ -829,7 +829,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
                                 }
                             });
                         }
-                        holder.onCreate();
+                        holder.onCreate(holder.itemView);
                         return holder;
                     }
                 }
@@ -847,7 +847,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
     private static FasterHolder createHolder(FasterAdapter adapter, View view) {
         FasterHolder holder = new FasterHolder(view);
         holder.attach(adapter);
-        holder.onCreate();
+        holder.onCreate(view);
         return holder;
     }
 
@@ -1086,14 +1086,23 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * 设置数据源
      *
      * @param list
+     */
+    public void setSourceData(@Nullable List<T> list) {
+        setSourceData(list, null);
+    }
+
+    /**
+     * 设置数据源
+     *
+     * @param list
      * @param strategy
      */
-    public void setData(@Nullable List<T> list, @Nullable Strategy<T> strategy) {
+    public void setSourceData(@Nullable List<T> list, @Nullable Strategy<T> strategy) {
         loadMoreDismiss();
         if (null == list) {
             clear(false);
         } else {
-            mList = convertList(list, strategy);
+            mList = fillData(list, strategy);
             notifyDataSetChanged();
         }
     }
@@ -1117,14 +1126,34 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * 设置数据源
      *
      * @param list
+     */
+    public void setSourceDataByDiff(@Nullable final List<T> list) {
+        setSourceDataByDiff(list, null, false);
+    }
+
+    /**
+     * 设置数据源
+     *
+     * @param list
      * @param strategy
      */
-    public void setDataByDiff(@Nullable final List<T> list, @Nullable Strategy<T> strategy) {
+    public void setSourceDataByDiff(@Nullable final List<T> list, @Nullable Strategy<T> strategy) {
+        setSourceDataByDiff(list, strategy, false);
+    }
+
+    /**
+     * 设置数据源
+     *
+     * @param list
+     * @param strategy
+     * @param payload
+     */
+    public void setSourceDataByDiff(@Nullable final List<T> list, @Nullable Strategy<T> strategy, final boolean payload) {
         loadMoreDismiss();
         if (null == list) {
             clear(false);
         } else {
-            setDataByDiff(convertList(list, strategy));
+            setDataByDiff(fillData(list, strategy), payload);
         }
     }
 
@@ -1216,7 +1245,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      *
      * @param data
      */
-    public void add(@Nullable T data) {
+    public void addSource(@Nullable T data) {
         if (data == null) {
             return;
         }
@@ -1229,7 +1258,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param data
      * @param immediately
      */
-    public void add(@Nullable T data, boolean immediately) {
+    public void addSource(@Nullable T data, boolean immediately) {
         if (data == null) {
             return;
         }
@@ -1242,7 +1271,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param index
      * @param data
      */
-    public void add(int index, @Nullable T data) {
+    public void addSource(int index, @Nullable T data) {
         if (data == null) {
             return;
         }
@@ -1256,7 +1285,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param data
      * @param immediately
      */
-    public void add(int index, @Nullable T data, boolean immediately) {
+    public void addSource(int index, @Nullable T data, boolean immediately) {
         if (data == null) {
             return;
         }
@@ -1314,15 +1343,23 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         }
     }
 
-    private static <T> List<Entry<T>> convertList(@Nullable List<T> list, @Nullable Strategy<T> strategy) {
-        if (list == null) {
-            return null;
-        }
-        List<Entry<T>> result = new LinkedList<>();
-        for (T data : list) {
-            result.add(Entry.create(data, strategy));
-        }
-        return result;
+    /**
+     * 添加数据集
+     *
+     * @param list
+     */
+    public void addAllSource(@Nullable List<T> list) {
+        addAll(mList.size(), fillData(list, null), false);
+    }
+
+    /**
+     * 添加数据集
+     *
+     * @param index
+     * @param list
+     */
+    public void addAllSource(int index, @Nullable List<T> list) {
+        addAll(index, fillData(list, null), false);
     }
 
     /**
@@ -1331,19 +1368,8 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param list
      * @param strategy
      */
-    public void addAll(@Nullable List<T> list, @Nullable Strategy<T> strategy) {
-        addAll(mList.size(), convertList(list, strategy), false);
-    }
-
-    /**
-     * 添加数据集
-     *
-     * @param list
-     * @param strategy
-     * @param immediately
-     */
-    public void addAll(@Nullable List<T> list, @Nullable Strategy<T> strategy, boolean immediately) {
-        addAll(mList.size(), convertList(list, strategy), immediately);
+    public void addAllSource(@Nullable List<T> list, @Nullable Strategy<T> strategy) {
+        addAll(mList.size(), fillData(list, strategy), false);
     }
 
     /**
@@ -1353,8 +1379,8 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param list
      * @param strategy
      */
-    public void addAll(int index, @Nullable List<T> list, @Nullable Strategy<T> strategy) {
-        addAll(index, convertList(list, strategy), false);
+    public void addAllSource(int index, @Nullable List<T> list, @Nullable Strategy<T> strategy) {
+        addAll(index, fillData(list, strategy), false);
     }
 
     /**
@@ -1365,9 +1391,21 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      * @param strategy
      * @param immediately
      */
-    public void addAll(int index, @Nullable List<T> list, @Nullable Strategy<T> strategy, boolean immediately) {
-        addAll(index, convertList(list, strategy), immediately);
+    public void addAllSource(int index, @Nullable List<T> list, @Nullable Strategy<T> strategy, boolean immediately) {
+        addAll(index, fillData(list, strategy), immediately);
     }
+
+    /**
+     * 添加数据集
+     *
+     * @param list
+     * @param strategy
+     * @param immediately
+     */
+    public void addAllSource(@Nullable List<T> list, @Nullable Strategy<T> strategy, boolean immediately) {
+        addAll(mList.size(), fillData(list, strategy), immediately);
+    }
+
 
     /**
      * 添加数据集
@@ -1376,16 +1414,6 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
      */
     public void addAll(@Nullable List<? extends Entry<T>> list) {
         addAll(mList.size(), list, false);
-    }
-
-    /**
-     * 添加数据集
-     *
-     * @param list
-     * @param immediately
-     */
-    public void addAll(@Nullable List<? extends Entry<T>> list, boolean immediately) {
-        addAll(mList.size(), list, immediately);
     }
 
     /**
@@ -1588,6 +1616,52 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         return mList.size();
     }
 
+    public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
+        this.mOnItemClickListener = onItemClickListener;
+    }
+
+    public void setOnLoadListener(OnLoadListener onLoadListener) {
+        this.mOnLoadListener = onLoadListener;
+    }
+
+    /**
+     * 将策略填充到集合中
+     *
+     * @param list
+     * @param strategy
+     * @param <D>
+     * @return
+     */
+    public static <D> List<Entry<D>> fillData(@Nullable List<D> list, @Nullable Strategy<D> strategy) {
+        if (list == null) {
+            return null;
+        }
+        List<Entry<D>> result = new LinkedList<>();
+        for (D data : list) {
+            result.add(Entry.create(data, strategy));
+        }
+        return result;
+    }
+
+    /**
+     * 将策略填充到集合中
+     *
+     * @param ds
+     * @param strategy
+     * @param <D>
+     * @return
+     */
+    public static <D> List<Entry<D>> fillData(@Nullable D[] ds, @Nullable Strategy<D> strategy) {
+        if (ds == null) {
+            return null;
+        }
+        List<Entry<D>> result = new LinkedList<>();
+        for (D data : ds) {
+            result.add(Entry.create(data, strategy));
+        }
+        return result;
+    }
+
     /**
      * 条目点击监听器
      */
@@ -1636,16 +1710,16 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         private View loadMoreView = null;
         private List<View> headerViews = null;
         private List<View> footerViews = null;
-        private boolean emptyMatchParent = false;
-        private boolean errorMatchParent = false;
+        private boolean emptyMatchParent = true;
+        private boolean errorMatchParent = true;
         private boolean emptyEnabled = true;
         private boolean headerFront = false;
         private boolean footerFront = false;
-        private boolean loadMoreEnabled = false;
+        private boolean loadMoreEnabled = true;
         private List<Entry<D>> list = new ArrayList<>();
         private ArrayMap<Class, Pair<Strategy, MultiType>> bindMap = null;
 
-        private Builder() {
+        public Builder() {
         }
 
         /**
@@ -1843,6 +1917,35 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
             return this;
         }
 
+        /**
+         * 单类型策略的集合的方式填充
+         *
+         * @param list
+         * @param strategy
+         * @return
+         */
+        public Builder<D> fillData(@Nullable List<D> list, @NonNull Strategy<D> strategy) {
+            if (null == list) {
+                return this;
+            }
+            this.list = FasterAdapter.fillData(list, strategy);
+            return this;
+        }
+
+        /**
+         * 单类型策略的集合的方式填充
+         *
+         * @param ds
+         * @param strategy
+         * @return
+         */
+        public Builder<D> fillData(@Nullable D[] ds, @NonNull Strategy<D> strategy) {
+            if (null == list) {
+                return this;
+            }
+            this.list = FasterAdapter.fillData(ds, strategy);
+            return this;
+        }
 
         /**
          * 一对多的数据类型、视图类型绑定
@@ -1866,7 +1969,7 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
          * @param strategy
          * @return
          */
-        public <T> Builder<D> bind(@NonNull Class<T> cls, @NonNull Strategy<T> strategy) {
+        public <T> Builder<D> bind(@NonNull Class cls, @NonNull Strategy strategy) {
             if (null == bindMap) {
                 bindMap = new ArrayMap<>();
             }
@@ -1884,4 +1987,3 @@ public final class FasterAdapter<T> extends RecyclerView.Adapter<FasterHolder> {
         }
     }
 }
-

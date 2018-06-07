@@ -96,9 +96,9 @@ public class SingleActivity extends AppCompatActivity implements FasterAdapter.O
                     list.add(new User("ID：" + i, i, false, false, null));
                 }
                 if (diff) {
-                    adapter.setDataByDiff(list, strategy);
+                    adapter.setSourceDataByDiff(list, strategy);
                 } else {
-                    adapter.setData(list, strategy);
+                    adapter.setSourceData(list, strategy);
                 }
             }
         }, 1_000);

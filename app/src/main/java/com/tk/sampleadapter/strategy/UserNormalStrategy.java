@@ -26,10 +26,10 @@ public class UserNormalStrategy extends Strategy<User> {
     }
 
     @Override
-    protected FasterHolder createHolder(ViewGroup parent) {
+    protected FasterHolder onCreateHolder(ViewGroup parent) {
         return new FasterHolder(LayoutInflater.from(parent.getContext()).inflate(layoutId(), parent, false)) {
             @Override
-            protected void onCreate() {
+            protected void onCreate(View itemView) {
                 setOnClickListener(R.id.btn_delete, new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
